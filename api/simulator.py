@@ -45,7 +45,7 @@ def build_match(seed: int = SEED) -> dict:
 
     while second < DURATION_SECONDS:
         duration = rng.randint(10, 24)
-        second = min(second + duration, DURATION_SECONDS - 1)
+        second = min(second + duration, DURATION_SECONDS)
         if rng.random() < 0.23:
             current_team = "north" if current_team == "south" else "south"
 
