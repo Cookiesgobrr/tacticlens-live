@@ -31,9 +31,8 @@ jobs:
         working-directory: web
       - name: Build static preview
         env:
-          GITHUB_PAGES: "true"
           VITE_STATIC_DEMO: "true"
-        run: npm run build
+        run: npm run build -- --mode pages
         working-directory: web
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
