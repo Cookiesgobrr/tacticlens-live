@@ -152,7 +152,10 @@ function App() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/match", { signal: controller.signal })
+    const matchUrl = import.meta.env.VITE_STATIC_DEMO === "true"
+      ? import.meta.env.BASE_URL + "demo-match.json"
+      : "/api/match";
+    fetch(matchUrl, { signal: controller.signal })
       .then(response => {
         if (!response.ok) throw new Error("API returned " + response.status);
         return response.json() as Promise<Match>;
@@ -160,7 +163,7 @@ function App() {
       .then(setMatch)
       .catch(e => {
         if (e.name !== "AbortError")
-          setError("Cannot reach the match API. Start FastAPI on port 8000 and refresh. " + e.message);
+          setError("Could not load synthetic match data. " + e.message);
       });
     return () => controller.abort();
   }, []);
