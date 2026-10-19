@@ -1,5 +1,6 @@
 """TacticLens Live REST API (synthetic demo, no live football feed)."""
 from fastapi import FastAPI
+from api.agent_pipeline import run_pipeline
 from api.simulator import build_match
 from api.analytics import detect_insights, match_stats
 
@@ -22,3 +23,9 @@ def get_match():
 def get_stats(at: int = 5400):
     at = max(0, min(MATCH["duration_seconds"], at))
     return {"at_second": at, "stats": match_stats(MATCH["events"], at)}
+
+
+@app.get("/api/agent-demo")
+async def agent_demo(at: int = 4500):
+    """Free deterministic agent-style workflow; NOT generative AI."""
+    return await run_pipeline(MATCH, at_second=at)
