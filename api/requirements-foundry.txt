@@ -1,0 +1,4 @@
+-r requirements.txt
+# Optional cloud integration. Install only after Azure credits/model quotas are approved.
+agent-framework-foundry
+azure-identity
