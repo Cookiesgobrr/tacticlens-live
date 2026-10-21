@@ -20,9 +20,15 @@ interface Insight {
   metric: { name: string; previous: number; recent: number; delta: number;
     previous_window: string; recent_window: string };
 }
+interface OverlayCue {
+  id: string; kind: "goal" | "insight"; start_second: number;
+  end_second: number; priority: number; headline: string;
+  subtitle: string; source_event_ids: string[]; placement: string;
+}
 interface Match {
   match_id: string; title: string; disclaimer: string; seed: number;
   duration_seconds: number; teams: Team[]; events: MatchEvent[]; insights: Insight[];
+  overlays?: OverlayCue[];
 }
 interface Stats { passes: number; shots: number; goals: number;
   recoveries: number; pressures: number; control_seconds: number; control_share_pct: number }
@@ -187,6 +193,9 @@ function App() {
   const milestones = useMemo(() => visible.filter(e =>
     ["goal", "shot", "recovery", "turnover"].includes(e.kind)).slice(-5).reverse(), [visible]);
   const insight = match?.insights.find(i => clock >= i.at_second);
+  const activeOverlay = useMemo(() => (match?.overlays ?? [])
+    .filter(cue => clock >= cue.start_second && clock < cue.end_second)
+    .sort((a, b) => b.priority - a.priority)[0], [match, clock]);
   const allEvidence = useMemo(() => {
     if (!match || !insight) return [];
     const ids = new Set([...insight.baseline_ids, ...insight.evidence_ids]);
@@ -262,6 +271,15 @@ function App() {
                 <span className="meta-outline"><span className="light-dot" /> EVENT STREAM ACTIVE</span>
               </div>
               <Pitch recent={recent} highlighted={highlighted} />
+              {activeOverlay && <div className="broadcast-overlay" role="status" aria-live="polite">
+                <div className="broadcast-overlay-eyebrow">
+                  <span className="light-dot" /> BROADCAST CUE · {formatTime(activeOverlay.start_second)}
+                  <span className="broadcast-overlay-id">{activeOverlay.id}</span>
+                </div>
+                <strong>{activeOverlay.headline}</strong>
+                <span>{activeOverlay.subtitle}</span>
+                <small>{activeOverlay.source_event_ids.length} TRACEABLE EVENT REFERENCES · SYNTHETIC</small>
+              </div>}
               <div className="replay-controls">
                 <button className="icon-button" aria-label="Restart match" title="Restart"
                   onClick={() => { setClock(0); setPlaying(false); }}><RotateCcw size={19} /></button>
