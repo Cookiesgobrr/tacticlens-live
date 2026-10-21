@@ -6,6 +6,7 @@ tracking-data possession or official football statistics.
 from __future__ import annotations
 
 import random
+import math
 
 SEED = 20261018
 DURATION_SECONDS = 90 * 60
@@ -91,6 +92,31 @@ def build_match(seed: int = SEED) -> dict:
     events.sort(key=lambda e: (e["second"], e["kind"]))
     for index, event in enumerate(events, start=1):
         event["id"] = f"EVT-{index:04d}"
+
+    # A separate RNG adds fictional pass endpoints and completion outcomes
+    # WITHOUT changing the existing match or its audited source event IDs.
+    # Distance is computed on an assumed 105m x 68m playing surface.
+    pass_rng = random.Random(seed + 924735)
+    for event in events:
+        if event["kind"] != "pass":
+            continue
+        start_x, start_y = event["x"], event["y"]
+        # Synthetic directional changes; not reconstructed from footage.
+        end_x = max(0, min(100, start_x + pass_rng.uniform(-28, 34)))
+        end_y = max(0, min(100, start_y + pass_rng.uniform(-32, 32)))
+        distance = math.hypot((end_x - start_x) * 1.05,
+                              (end_y - start_y) * 0.68)
+        difficulty = min(5, max(1, 1 + int(distance // 11)))
+        completed = pass_rng.random() < max(0.53, 0.95 - 0.095 * (difficulty - 1))
+        event["end_x"] = round(end_x, 1)
+        event["end_y"] = round(end_y, 1)
+        event["pass_distance_m"] = round(distance, 1)
+        event["pass_difficulty"] = difficulty
+        event["pass_completed"] = completed
+        event["description"] = (
+            f'{event["player"]} completes a {round(distance)}m pass'
+            if completed else f'{event["player"]} attempts a {round(distance)}m pass'
+        )
 
     return {
         "match_id": "TLL-DEMO-001",

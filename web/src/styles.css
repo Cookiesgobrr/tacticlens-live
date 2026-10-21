@@ -97,3 +97,15 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 .broadcast-overlay>span{font-size:12px;color:#dae8df}
 .broadcast-overlay small{font-size:9px;letter-spacing:1px;color:#8fa89a}
 @media(max-width:640px){.broadcast-overlay{margin:10px 8px 0;padding:12px}}
+
+.player-panel{padding-bottom:18px}
+.player-focus-label{display:block;margin:5px 20px 8px;color:#a3b3ac;font-size:11px}
+.player-focus-select{display:block;width:calc(100% - 40px);margin:0 20px 16px;background:#152324;color:#edf3f0;border:1px solid #3c5346;border-radius:8px;padding:11px 12px}
+.player-focus-metrics{margin:0 20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.player-focus-metrics span{padding:12px;background:#152124;border-radius:7px;display:flex;flex-direction:column;gap:3px}
+.player-focus-metrics strong{font:700 22px "Space Grotesk",sans-serif;color:#c6fa65}
+.player-focus-metrics small{font-size:10px;color:#b5c6bc}
+.player-focus-summary{margin:15px 20px 8px;color:#b5c7be;font-size:12px;line-height:1.6}
+.player-focus-events{display:flex;flex-direction:column;margin:0 20px}
+.player-focus-events button{display:flex;justify-content:space-between;gap:12px;background:transparent;border:none;border-top:1px solid #2b3937;padding:10px 0;color:#e0e9e2;text-align:left;font-size:11px}
+.player-focus-events button small{color:#a9c17c}
