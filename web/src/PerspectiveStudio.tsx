@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowRight, Clapperboard, Eye, Play, ScanEye, ShieldCheck, UserRound, Users } from "lucide-react";
+import { ArrowRight, Eye, Play, ScanEye, ShieldCheck, UserRound, Users, Clapperboard } from "lucide-react";
 import type { PublishedInsight } from "./foundry";
 
 export type TeamId = "north" | "south";
@@ -177,91 +177,88 @@ export function profileStories(moment: ComparisonMoment, events: PerspectiveEven
   ];
 }
 
+/** A quiet companion to the match: one active lens, not four competing cards. */
 export default function PerspectiveStudio({
   clock, events, insights, patterns, verifiedInsight, favoriteTeam, favoritePlayer,
   active, onActivate, onReplay, onSeekEvidence,
 }: Props) {
   const moments = useMemo(() => comparisonMoments(events, insights, patterns), [events, insights, patterns]);
-  const preferredMoment = moments.find(m => m.kind === "insight") ?? moments.find(m => m.kind === "goal") ?? moments[0];
-  const [choice, setChoice] = useState("");
-  const moment = moments.find(m => m.id === choice) ?? preferredMoment;
+  const [selectedId, setSelectedId] = useState("");
+  const available = moments.filter(m => m.at_second <= clock);
+  const moment = moments.find(m => m.id === selectedId && m.at_second <= clock)
+    ?? available.at(-1);
+  const feature = moments.find(m => m.kind === "insight");
   const club = favoriteTeam === "all" ? (moment?.team ?? "north") : favoriteTeam;
-  const linkedEvents = useMemo(() => {
+  const linked = useMemo(() => {
     if (!moment) return [];
     const ids = new Set(moment.evidence_ids);
     return events.filter(e => ids.has(e.id) && e.second <= moment.at_second);
   }, [events, moment]);
-  const targetPlayer = favoritePlayer || moment?.event?.player || linkedEvents.at(-1)?.player || "";
+  const targetPlayer = favoritePlayer || moment?.event?.player || linked.at(-1)?.player || "";
   const stories = moment ? profileStories(moment, events, club, targetPlayer, verifiedInsight) : [];
+  const selectedProfile = active ?? "fan";
+  const story = stories.find(s => s.key === selectedProfile);
+  const lensOptions: { key: Perspective; label: string; icon: typeof Eye }[] = [
+    { key: "fan", label: "Fan", icon: Eye },
+    { key: "analyst", label: "Data", icon: ScanEye },
+    { key: "club", label: "Club", icon: Users },
+    { key: "player", label: "Player", icon: UserRound },
+  ];
 
-  if (!moment) return null;
-  const isPreview = moment.at_second > clock;
-
-  return <section className="panel perspectives-panel" aria-label="Same moment, four perspectives">
-    <div className="perspectives-heading">
-      <div>
-        <div className="section-kicker"><ScanEye size={15} /> PERSONALIZED MATCH INTELLIGENCE</div>
-        <h2>One moment. Four experiences.</h2>
-        <p>One audited event stream, four genuinely different ways to understand the action.</p>
-      </div>
-      <span className="perspectives-pill"><ShieldCheck size={14} /> SAME SOURCE EVENTS</span>
+  return <section className="panel match-lens-panel" aria-label="Match Lens personalized viewing">
+    <div className="lens-topline"><span><ScanEye size={14} /> MATCH LENS</span>
+      <span>YOUR VIEW</span>
     </div>
-    <div className="perspectives-toolbar">
-      <label htmlFor="moment-select">Explore a match moment
-        <select id="moment-select" value={moment.id} onChange={event => setChoice(event.target.value)}>
-          {moments.map(item => <option key={item.id} value={item.id}>
-            {clockText(item.at_second)} · {item.label}
-          </option>)}
-        </select>
-      </label>
-      <div className="perspectives-preview-note">
-        {clockText(moment.at_second)} · {isPreview ? "Highlight preview — this moment is ahead of the replay clock" :
-          "Available at the current replay time"}
-      </div>
-    </div>
-    <div className="perspectives-grid">
-      {stories.map(story => {
-        const Icon = story.key === "fan" ? Eye : story.key === "analyst" ? ScanEye :
-          story.key === "club" ? Users : UserRound;
-        return <article key={story.key}
-          className={"perspective-card perspective-" + story.accent + (active === story.key ? " selected" : "")}>
-          <div className="perspective-card-top">
-            <span><Icon size={15} /> {story.label}</span>
-            <small>{story.source}</small>
-          </div>
-          <div className="perspective-kicker">{story.kicker}</div>
-          <h3>{story.headline}</h3>
-          <p>{story.narrative}</p>
-          <div className="perspective-footnote">{story.footnote}</div>
-          <div className="perspective-actions">
-            <button aria-pressed={active === story.key}
-              onClick={() => onActivate(story.key, moment, targetPlayer)}>
-              {active === story.key ? "Viewing" : "Switch to view"}
-              <ArrowRight size={14} />
-            </button>
-            <button className="perspective-replay" onClick={() => onReplay(story.key, moment, targetPlayer)}>
-              <Play size={13} /> Replay
-            </button>
-          </div>
-        </article>;
+    <h2>Watch it your way.</h2>
+    <p className="lens-subheading">Your viewpoint changes the commentary, camera and player emphasis.</p>
+    <div className="lens-selector" role="group" aria-label="Viewing perspective">
+      {lensOptions.map(option => {
+        const Icon = option.icon;
+        return <button key={option.key}
+          aria-pressed={selectedProfile === option.key}
+          onClick={() => {
+            if (moment) onActivate(option.key, moment, targetPlayer);
+          }}>
+          <Icon size={14} /> {option.label}
+        </button>;
       })}
     </div>
-    <div className="perspectives-evidence">
-      <div className="perspectives-evidence-title">
-        <span><ShieldCheck size={14} /> SHARED EVIDENCE · {linkedEvents.length} EVENT REFERENCES</span>
-        <span>All content is derived from the selected fictional match</span>
+    {available.length > 0 && <label className="lens-moment-select">
+      Key moment
+      <select aria-label="Choose a past match moment"
+        value={moment?.id ?? ""}
+        onChange={event => setSelectedId(event.target.value)}>
+        {available.map(item => <option key={item.id} value={item.id}>
+          {clockText(item.at_second)} · {item.label}
+        </option>)}
+      </select>
+    </label>}
+    {moment && story ? <div className="lens-story">
+      <div className="lens-story-top"><span>{clockText(moment.at_second)} · {story.kicker}</span>
+        <small>{story.source}</small></div>
+      <h3>{story.headline}</h3>
+      <p>{story.narrative}</p>
+      <div className="lens-actions">
+        <button className="lens-replay" onClick={() => onReplay(selectedProfile, moment, targetPlayer)}>
+          <Play size={13} /> Replay moment
+        </button>
+        <span><ShieldCheck size={12} /> {linked.length} sources</span>
       </div>
-      <div className="perspectives-evidence-scroll">
-        {linkedEvents.slice(-10).map(event => <button key={event.id}
-          onClick={() => onSeekEvidence(event.second)} title={"Seek to " + clockText(event.second)}>
-          {event.id} <span>{clockText(event.second)}</span> <ArrowRight size={12} />
-        </button>)}
-      </div>
-      <div className="perspectives-disclosure">
-        <Clapperboard size={13} /> Verified Microsoft Foundry output is reused only for its original
-        audited insight. Club and player views use deterministic event facts. Selecting a viewer
-        does not trigger any additional AI inference.
-      </div>
-    </div>
+      <details className="lens-sources">
+        <summary>Inspect source events</summary>
+        <div>{linked.slice(-12).map(e => <button key={e.id}
+          onClick={() => onSeekEvidence(e.second)}>{e.id} <span>{clockText(e.second)}</span></button>)}</div>
+      </details>
+    </div> : <div className="lens-empty">
+      <span>Insights will appear as the match unfolds.</span>
+      <small>The selected view uses only events visible at your replay time.</small>
+    </div>}
+    {feature && clock < feature.at_second && <button className="lens-demo-jump" onClick={() =>
+      onActivate(selectedProfile, feature,
+        favoritePlayer || events.find(e => feature.evidence_ids.includes(e.id))?.player || "")}>
+      Explore the verified AI moment <ArrowRight size={13} />
+    </button>}
+    <div className="lens-footer"><Clapperboard size={13} />
+      Synthetic event replay · Only the validated Foundry insight contains AI-written copy.</div>
   </section>;
 }
