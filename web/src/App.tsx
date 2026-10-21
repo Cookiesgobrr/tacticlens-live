@@ -375,6 +375,7 @@ function App() {
               </div>
               {pitchView === "3d" && match ? <Replay3D events={match.events} movement={match.movement} clock={clock}
                 cameraMode={replayCamera} focusedPlayer={focusedPlayer} favoriteTeam={favoriteTeam}
+                viewerLens={activePerspective ?? "fan"}
                 onSeek={second => {setClock(Math.max(0, second));setPlaying(true);}} /> :
                 <Pitch recent={recent} highlighted={highlighted} />}
               {activeOverlay && <div className="broadcast-overlay" role="status" aria-live="polite">
@@ -448,7 +449,7 @@ function App() {
             <section className="panel player-panel">
               <div className="panel-head"><div><div className="section-kicker"><Target size={15} /> PLAYER FOCUS</div><h2>Follow a player</h2></div></div>
               <label htmlFor="player-focus-select" className="player-focus-label">Choose a fictional player</label>
-              <select id="player-focus-select" className="player-focus-select" value={focusedPlayer} onChange={e => setFocusedPlayer(e.target.value)}>
+              <select id="player-focus-select" className="player-focus-select" value={focusedPlayer} onChange={e => { setFocusedPlayer(e.target.value); if (e.target.value) { setActivePerspective("player"); setReplayCamera("player"); } }}>
                 <option value="">Select player</option>
                 {players.map(player => <option key={player} value={player}>{player}</option>)}
               </select>

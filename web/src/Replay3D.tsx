@@ -13,6 +13,7 @@ type Props = {
   movement?: MovementFeed;
   events: ReplayEvent[]; clock: number; cameraMode: ReplayCamera;
   focusedPlayer: string; favoriteTeam: ReplayTeam | "all";
+  viewerLens?: "fan" | "analyst" | "club" | "player";
   onSeek: (second: number) => void;
 };
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
@@ -106,12 +107,27 @@ function timeLabel(second: number) {
     String(second % 60).padStart(2, "0");
 }
 export default function Replay3D({ events, movement, clock, cameraMode, focusedPlayer,
-  favoriteTeam, onSeek }: Props) {
+  favoriteTeam, viewerLens = "fan", onSeek }: Props) {
   const node = useRef<HTMLDivElement>(null);
-  const current = useRef({ clock, cameraMode, focusedPlayer, favoriteTeam });
-  current.current = { clock, cameraMode, focusedPlayer, favoriteTeam };
+  const nameTag = useRef<HTMLDivElement>(null);
+  const current = useRef({ clock, cameraMode, focusedPlayer, favoriteTeam, viewerLens });
+  current.current = { clock, cameraMode, focusedPlayer, favoriteTeam, viewerLens };
   const [unavailable, setUnavailable] = useState(false);
-  const ticker = useMemo(() => events.filter(e => e.second <= clock).slice(-4).reverse(), [events, clock]);
+  const ticker = useMemo(() => {
+    const past = events.filter(e => e.second <= clock);
+    if (viewerLens === "player" && focusedPlayer) return past.filter(e => e.player === focusedPlayer).slice(-4).reverse();
+    if (viewerLens === "club" && favoriteTeam !== "all") return past.filter(e => e.team === favoriteTeam).slice(-4).reverse();
+    return past.slice(-4).reverse();
+  }, [events, clock, viewerLens, focusedPlayer, favoriteTeam]);
+  const selectedMovement = useMemo(() => {
+    if (!focusedPlayer || !movement) return null;
+    const index = movement.players.findIndex(p => p.name === focusedPlayer);
+    const frame = movement.frames[Math.max(0, Math.min(movement.frames.length - 1,
+      Math.floor(clock / movement.sample_seconds)))];
+    const value = frame?.[index];
+    if (!value) return null;
+    return { speedKmh: (value[2] * 3.6).toFixed(1), team: movement.players[index].team };
+  }, [clock, focusedPlayer, movement]);
   const recent = ticker[0];
   const eventBadge = recent && clock - recent.second < 6 && flight(recent)
     ? (recent.kind === "pass"
@@ -180,6 +196,13 @@ export default function Replay3D({ events, movement, clock, cameraMode, focusedP
     receiverMarker.rotation.x = -Math.PI / 2; receiverMarker.position.y = 0.12;
     scene.add(receiverMarker);
     scene.add(trail);
+    // A separate 3D route shows the focused player's *simulated* recent run,
+    // never a reconstruction falsely presented as observed match tracking.
+    const routeMaterial = new THREE.LineBasicMaterial({ color: 0xf0ffa6, transparent: true, opacity: 0.85 });
+    const focusRoute = new THREE.Line(new THREE.BufferGeometry(), routeMaterial);
+    scene.add(focusRoute);
+    let routeKey = "";
+    const labelVec = new THREE.Vector3();
     let lastTrail = "", lastFraction = -1, raf = 0, destroyed = false;
     let lastFrame = performance.now();
     const wantedCamera = new THREE.Vector3(), target = new THREE.Vector3();
@@ -268,6 +291,23 @@ export default function Replay3D({ events, movement, clock, cameraMode, focusedP
         }
       }
       const follow = actors.find(actor => actor.name === props.focusedPlayer);
+      const projectedTag = nameTag.current;
+      const frameIndex = Math.max(0, Math.floor(t / (movement?.sample_seconds ?? 1)));
+      const followIndex = follow ? actors.indexOf(follow) : -1;
+      const routeIdentity = props.viewerLens === "player" && followIndex >= 0 && movement ?
+        followIndex + ":" + frameIndex : "";
+      if (routeKey !== routeIdentity) {
+        focusRoute.geometry.dispose();
+        const from = Math.max(0, frameIndex - 8);
+        const positions: THREE.Vector3[] = [];
+        if (routeIdentity && movement) for (let j = from; j <= frameIndex; j++) {
+          const sample = movement.frames[j]?.[followIndex];
+          if (sample) positions.push(new THREE.Vector3(sample[0], 0.18, sample[1]));
+        }
+        focusRoute.geometry = new THREE.BufferGeometry().setFromPoints(positions);
+        routeKey = routeIdentity;
+      }
+      focusRoute.visible = Boolean(routeIdentity);
       if (props.cameraMode === "tactical") {
         wantedCamera.set(0, 114, 0.01); target.set(0, 0, 0); camera.up.set(0, 0, -1);
       } else if (props.cameraMode === "player" && follow) {
@@ -282,6 +322,21 @@ export default function Replay3D({ events, movement, clock, cameraMode, focusedP
       camera.position.lerp(wantedCamera, clamp(dt * 3.5, 0, 1));
       lookAt.lerp(target, clamp(dt * 3.5, 0, 1));
       camera.lookAt(lookAt);
+      // Project the actor position into a small readable 2D label.
+      // This does not alter the measured/source event dataset.
+      if (projectedTag) {
+        const show = Boolean(follow && (props.viewerLens === "player" || props.cameraMode === "player"));
+        projectedTag.style.display = show ? "block" : "none";
+        if (show && follow) {
+          labelVec.copy(follow.figure.position);
+          labelVec.y += 3.7;
+          labelVec.project(camera);
+          const canvas = renderer.domElement;
+          projectedTag.style.left = ((labelVec.x + 1) / 2 * canvas.clientWidth) + "px";
+          projectedTag.style.top = ((1 - labelVec.y) / 2 * canvas.clientHeight) + "px";
+          projectedTag.style.display = labelVec.z < 1 ? "block" : "none";
+        }
+      }
       renderer.render(scene, camera);
       raf = requestAnimationFrame(draw);
     };
@@ -312,13 +367,24 @@ export default function Replay3D({ events, movement, clock, cameraMode, focusedP
       <div ref={node} className="replay3d-canvas" />}
     <div className="replay3d-top"><span className="replay3d-live-dot" /> 3D MATCH STUDIO
       <span className="replay3d-approx">EVENT-BASED RECONSTRUCTION</span></div>
+    <div className="replay3d-focus-tag" ref={nameTag} aria-hidden="true">{focusedPlayer}</div>
+    <div className="replay3d-lens-hud">
+      <strong>{viewerLens === "analyst" ? "TACTICAL DATA" : viewerLens === "player" ?
+        "PLAYER TRACK" : viewerLens === "club" ? "CLUB FOCUS" : "MATCH VIEW"}</strong>
+      {viewerLens === "player" && focusedPlayer && <span>{focusedPlayer} · {selectedMovement ?
+        selectedMovement.speedKmh + " km/h simulated" : "No movement sample"}</span>}
+      {viewerLens === "club" && <span>{favoriteTeam === "all" ? "Both clubs" :
+        favoriteTeam === "north" ? "Northport FC" : "Southbridge Athletic"}</span>}
+      {viewerLens === "analyst" && <span>Pass distances · Verified source events · Reconstructed movement</span>}
+    </div>
     {eventBadge && <div className="replay3d-trail-label">{eventBadge}</div>}
-    <div className="replay3d-ticker" aria-label="Recent event ticker">
+    <div className="replay3d-ticker" aria-label={viewerLens === "player" ? "Focused player's event ticker" : "Recent event ticker"}>
       {ticker.map(e => <button key={e.id} onClick={() => onSeek(e.second)}>
         <span>{timeLabel(e.second)}</span>
         <strong>{e.kind === "pass" ? (e.pass_completed ? "PASS ✓" : "PASS ATTEMPT") : e.kind.toUpperCase()}</strong>
-        <small>{e.player}</small>
+        <small>{e.player}{viewerLens === "analyst" && e.kind === "pass" && e.pass_distance_m !== undefined ? " · " + e.pass_distance_m.toFixed(1) + " m" : ""}</small>
       </button>)}
+      {ticker.length === 0 && <div className="replay3d-no-events">No events from this focus yet</div>}
     </div>
     <div className="replay3d-disclaimer">All-player simulated motion · 1 Hz speed logs · capped at 8.6 m/s · NOT measured tracking data.</div>
   </div>;
