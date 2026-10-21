@@ -12,6 +12,7 @@ from pathlib import Path
 from api.simulator import build_match
 from api.analytics import detect_insights
 from api.overlays import build_overlay_cues
+from api.recaps import build_match_recaps
 
 
 DEFAULT_OUTPUT = Path("web/public/demo-match.json")
@@ -20,7 +21,7 @@ DEFAULT_OUTPUT = Path("web/public/demo-match.json")
 def create_snapshot() -> dict:
     match = build_match()
     insights = detect_insights(match["events"])
-    return {**match, "insights": insights, "overlays": build_overlay_cues(match, insights)}
+    return {**match, "insights": insights, "overlays": build_overlay_cues(match, insights), "recaps": build_match_recaps(match)}
 
 
 def export_snapshot(output: Path = DEFAULT_OUTPUT) -> Path:

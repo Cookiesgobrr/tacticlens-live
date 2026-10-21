@@ -26,10 +26,11 @@ interface OverlayCue {
   end_second: number; priority: number; headline: string;
   subtitle: string; source_event_ids: string[]; placement: string;
 }
+interface Recap { id: string; stage: string; at_second: number; ai_generated: boolean; score: Record<TeamId,number>; evidence_ids: string[]; narratives: Record<"en"|"ar",Record<Mode,string>>; method: string }
 interface Match {
   match_id: string; title: string; disclaimer: string; seed: number;
   duration_seconds: number; teams: Team[]; events: MatchEvent[]; insights: Insight[];
-  overlays?: OverlayCue[];
+  overlays?: OverlayCue[]; recaps?: Recap[];
 }
 interface Stats { passes: number; shots: number; goals: number;
   recoveries: number; pressures: number; control_seconds: number; control_share_pct: number }
@@ -157,6 +158,7 @@ function App() {
   const [mode, setMode] = useState<Mode>("fan");
   const [showEvidence, setShowEvidence] = useState(true);
   const [focusedPlayer, setFocusedPlayer] = useState("");
+  const [recapLanguage, setRecapLanguage] = useState<"en"|"ar">("en");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -376,6 +378,25 @@ function App() {
           </div>
 
           <aside className="side-column">
+            <section className="panel recaps-panel">
+              <div className="panel-head"><div><div className="section-kicker"><Sparkles size={15} /> MATCH STORY</div><h2>Automated recaps</h2></div></div>
+              <div className="recap-languages" role="group" aria-label="Recap language">
+                <button aria-pressed={recapLanguage === "en"} onClick={() => setRecapLanguage("en")}>English</button>
+                <button aria-pressed={recapLanguage === "ar"} onClick={() => setRecapLanguage("ar")}>العربية</button>
+              </div>
+              {(match?.recaps ?? []).filter(recap => clock >= recap.at_second).map(recap => <article key={recap.id} className="recap-entry" dir={recapLanguage === "ar" ? "rtl" : "ltr"}>
+                <div className="recap-meta"><span>{recap.stage === "half_time" ? "HALF-TIME" : "FULL-TIME"} · {formatTime(recap.at_second)}</span><span>RULE-BASED · SYNTHETIC</span></div>
+                <h3>{recap.narratives[recapLanguage][mode === "broadcast" ? "broadcast" : "fan"]}</h3>
+                {mode === "analyst" && <p>{recap.narratives[recapLanguage].analyst}</p>}
+                <p className="recap-method">{recap.method}</p>
+                <div className="recap-citations">{recap.evidence_ids.map(id => {
+                  const event = match?.events.find(e => e.id === id);
+                  return event ? <button key={id} title={event.description} onClick={() => {setClock(event.second);setPlaying(false);}}>{id} · {formatTime(event.second)}</button> : null;
+                })}</div>
+              </article>)}
+              {!match?.recaps?.some(recap => clock >= recap.at_second) && <p className="recap-pending">The half-time recap unlocks at 45:00 and full-time recap at 90:00. Seek the replay to explore each report.</p>}
+            </section>
+
             <section className="panel player-panel">
               <div className="panel-head"><div><div className="section-kicker"><Target size={15} /> PLAYER FOCUS</div><h2>Follow a player</h2></div></div>
               <label htmlFor="player-focus-select" className="player-focus-label">Choose a fictional player</label>

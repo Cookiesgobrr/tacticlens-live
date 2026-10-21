@@ -109,3 +109,12 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 .player-focus-events{display:flex;flex-direction:column;margin:0 20px}
 .player-focus-events button{display:flex;justify-content:space-between;gap:12px;background:transparent;border:none;border-top:1px solid #2b3937;padding:10px 0;color:#e0e9e2;text-align:left;font-size:11px}
 .player-focus-events button small{color:#a9c17c}
+
+.recaps-panel{padding-bottom:18px}.recap-languages{display:flex;gap:8px;margin:0 20px 16px}
+.recap-languages button{background:#1b2b29;color:#e8f5e8;border:1px solid #3b5545;padding:8px 15px;border-radius:6px}
+.recap-languages button[aria-pressed="true"]{color:#0c1712;background:#c6fa65;font-weight:700}
+.recap-entry{margin:12px 20px;border:1px solid #344942;background:#142120;padding:13px;border-radius:9px}
+.recap-meta{display:flex;justify-content:space-between;gap:10px;color:#c6fa65;font-size:9px;letter-spacing:.5px;margin-bottom:10px}
+.recap-entry h3{font-size:14px;line-height:1.55}.recap-entry p{font-size:12px;line-height:1.65;margin-top:8px;color:#bdcbc3}
+.recap-entry .recap-method{font-size:10px;color:#899e91}.recap-pending{margin:8px 20px 20px;color:#bdcbc3;font-size:12px;line-height:1.7}
+.recap-citations{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}.recap-citations button{font-size:9px;background:#22312d;color:#caebc0;border:1px solid #385044;border-radius:4px;padding:5px}
