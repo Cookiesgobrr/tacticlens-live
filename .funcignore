@@ -1,0 +1,11 @@
+.git*
+.github/
+.venv/
+web/
+docs/
+**/__pycache__/
+**/.pytest_cache/
+api/tests/
+node_modules/
+.env*
+*.md
