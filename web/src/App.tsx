@@ -1,3 +1,4 @@
+import Replay3D, { type ReplayCamera } from "./Replay3D";
 import { validateFoundryCache, type PublishedInsight } from "./foundry";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -159,7 +160,14 @@ function App() {
   const [speed, setSpeed] = useState(4);
   const [mode, setMode] = useState<Mode>("fan");
   const [showEvidence, setShowEvidence] = useState(true);
-  const [focusedPlayer, setFocusedPlayer] = useState("");
+  const [focusedPlayer, setFocusedPlayer] = useState(() => localStorage.getItem("tacticlens.player") || "");
+  const [favoriteTeam, setFavoriteTeam] = useState<"all" | TeamId>(() => {
+    const saved = localStorage.getItem("tacticlens.club");
+    return saved === "north" || saved === "south" ? saved : "all";
+  });
+  const [focusMetric, setFocusMetric] = useState("all");
+  const [pitchView, setPitchView] = useState<"2d"|"3d">("3d");
+  const [replayCamera, setReplayCamera] = useState<ReplayCamera>("broadcast");
   const [recapLanguage, setRecapLanguage] = useState<"en"|"ar">("en");
   const [foundryInsight, setFoundryInsight] = useState<PublishedInsight | null>(null);
   const [foundryFeedStatus, setFoundryFeedStatus] = useState<"loading"|"verified"|"pending"|"unavailable">("loading");
@@ -211,6 +219,8 @@ function App() {
     return () => controller.abort();
   }, [match]);
 
+  useEffect(() => { localStorage.setItem("tacticlens.club", favoriteTeam); }, [favoriteTeam]);
+  useEffect(() => { localStorage.setItem("tacticlens.player", focusedPlayer); }, [focusedPlayer]);
   const duration = match?.duration_seconds ?? 5400;
   useEffect(() => {
     if (!playing) return;
@@ -246,8 +256,18 @@ function App() {
     const featured = (match?.insights ?? [])
       .filter(item => item.at_second <= clock)
       .map(item => ({ kind: "featured" as const, at: item.at_second, item }));
-    return [...patterns, ...featured].sort((a, b) => b.at - a.at || (a.kind === "featured" ? -1 : 1));
-  }, [match, clock]);
+    return [...patterns, ...featured]
+      .filter(entry => favoriteTeam === "all" || entry.item.team === favoriteTeam)
+      .filter(entry => focusMetric === "all" || (
+        entry.kind === "featured"
+          ? (focusMetric === "recoveries" && entry.item.type === "high_recovery_shift")
+          : (focusMetric === "recoveries" ? entry.item.type === "high_recovery" :
+             focusMetric === "passing" ? entry.item.type === "completed_pass" :
+             focusMetric === "shots" ? entry.item.type === "shot" :
+             entry.item.type === "pressure")
+      ))
+      .sort((a, b) => b.at - a.at || (a.kind === "featured" ? -1 : 1));
+  }, [match, clock, favoriteTeam, focusMetric]);
   const verifiedAI = insight && foundryInsight?.id === insight.id
     && foundryInsight.at_second <= clock ? foundryInsight : null;
   const activeOverlay = useMemo(() => (match?.overlays ?? [])
@@ -314,6 +334,39 @@ function App() {
             <div className="team-crest">S</div></div>
         </section>
 
+        <section className="panel preference-panel" aria-label="Personalize your match experience">
+          <div className="preference-head">
+            <div><div className="section-kicker"><Target size={15} /> YOUR MATCH, YOUR PERSPECTIVE</div>
+            <h2>Personalize the match</h2></div>
+            <span>Preferences saved on this device</span>
+          </div>
+          <div className="preference-controls">
+            <label>Favorite club
+              <select value={favoriteTeam} onChange={e => setFavoriteTeam(e.target.value as TeamId | "all")}>
+                <option value="all">Both teams</option>
+                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </label>
+            <label>Follow a player
+              <select value={focusedPlayer} onChange={e => {
+                setFocusedPlayer(e.target.value);
+                if (e.target.value) setReplayCamera("player");
+              }}>
+                <option value="">All players</option>
+                {players.map(player => <option key={player} value={player}>{player}</option>)}
+              </select>
+            </label>
+            <label>Focus statistic
+              <select value={focusMetric} onChange={e => setFocusMetric(e.target.value)}>
+                <option value="all">Everything</option>
+                <option value="recoveries">Recoveries</option>
+                <option value="pressure">Pressing</option>
+                <option value="passing">Passing</option>
+                <option value="shots">Shots</option>
+              </select>
+            </label>
+          </div>
+        </section>
         <div className="dashboard-grid">
           <div className="main-column">
             <section className="panel pitch-panel">
@@ -322,7 +375,20 @@ function App() {
                   <h2>Live tactical map</h2></div>
                 <span className="meta-outline"><span className="light-dot" /> EVENT STREAM ACTIVE</span>
               </div>
-              <Pitch recent={recent} highlighted={highlighted} />
+              <div className="replay-view-switch" role="group" aria-label="Replay presentation">
+                <button aria-pressed={pitchView === "3d"} onClick={() => setPitchView("3d")}>3D Match Studio</button>
+                <button aria-pressed={pitchView === "2d"} onClick={() => setPitchView("2d")}>2D Event Map</button>
+                {pitchView === "3d" && <select aria-label="3D camera" value={replayCamera}
+                  onChange={e => setReplayCamera(e.target.value as ReplayCamera)}>
+                  <option value="broadcast">Broadcast camera</option>
+                  <option value="tactical">Tactical camera</option>
+                  <option value="player">Player follow</option>
+                </select>}
+              </div>
+              {pitchView === "3d" && match ? <Replay3D events={match.events} clock={clock}
+                cameraMode={replayCamera} focusedPlayer={focusedPlayer} favoriteTeam={favoriteTeam}
+                onSeek={second => {setClock(second);setPlaying(false);}} /> :
+                <Pitch recent={recent} highlighted={highlighted} />
               {activeOverlay && <div className="broadcast-overlay" role="status" aria-live="polite">
                 <div className="broadcast-overlay-eyebrow">
                   <span className="light-dot" /> BROADCAST CUE · {formatTime(activeOverlay.start_second)}
