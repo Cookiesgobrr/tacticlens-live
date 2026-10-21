@@ -12,6 +12,7 @@ interface Team { id: TeamId; name: string; short: string; color: string }
 interface MatchEvent {
   id: string; second: number; minute: number; team: TeamId; player: string;
   kind: EventKind; x: number; y: number; control_seconds: number; description: string;
+  pass_distance_m?: number; pass_difficulty?: number; pass_completed?: boolean;
 }
 interface Insight {
   id: string; at_second: number; team: TeamId; type: string; headline: string;
@@ -155,6 +156,7 @@ function App() {
   const [speed, setSpeed] = useState(4);
   const [mode, setMode] = useState<Mode>("fan");
   const [showEvidence, setShowEvidence] = useState(true);
+  const [focusedPlayer, setFocusedPlayer] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -190,6 +192,14 @@ function App() {
   const visible = useMemo(() => match?.events.filter(e => e.second <= clock) ?? [], [match, clock]);
   const stats = useMemo(() => getStats(visible), [visible]);
   const recent = useMemo(() => visible.slice(-18), [visible]);
+  const players = useMemo(() => Array.from(new Set(match?.events.map(e => e.player) ?? [])).sort(), [match]);
+  const playerEvents = useMemo(() => visible.filter(e => e.player === focusedPlayer), [visible, focusedPlayer]);
+  const playerPasses = useMemo(() => playerEvents.filter(e => e.kind === "pass"), [playerEvents]);
+  const playerCompleted = playerPasses.filter(e => e.pass_completed === true).length;
+  const playerAccuracy = playerPasses.length ? Math.round(100 * playerCompleted / playerPasses.length) : null;
+  const playerRecoveries = playerEvents.filter(e => e.kind === "recovery").length;
+  const playerShots = playerEvents.filter(e => e.kind === "shot" || e.kind === "goal").length;
+  const playerGoals = playerEvents.filter(e => e.kind === "goal").length;
   const milestones = useMemo(() => visible.filter(e =>
     ["goal", "shot", "recovery", "turnover"].includes(e.kind)).slice(-5).reverse(), [visible]);
   const insight = match?.insights.find(i => clock >= i.at_second);
@@ -366,6 +376,27 @@ function App() {
           </div>
 
           <aside className="side-column">
+            <section className="panel player-panel">
+              <div className="panel-head"><div><div className="section-kicker"><Target size={15} /> PLAYER FOCUS</div><h2>Follow a player</h2></div></div>
+              <label htmlFor="player-focus-select" className="player-focus-label">Choose a fictional player</label>
+              <select id="player-focus-select" className="player-focus-select" value={focusedPlayer} onChange={e => setFocusedPlayer(e.target.value)}>
+                <option value="">Select player</option>
+                {players.map(player => <option key={player} value={player}>{player}</option>)}
+              </select>
+              {focusedPlayer ? <>
+                <div className="player-focus-metrics">
+                  <span><strong>{playerPasses.length}</strong><small>Pass attempts</small></span>
+                  <span><strong>{playerAccuracy === null ? "—" : playerAccuracy + "%"}</strong><small>Pass accuracy</small></span>
+                  <span><strong>{playerRecoveries}</strong><small>Recoveries</small></span>
+                  <span><strong>{playerShots}</strong><small>Shots</small></span>
+                </div>
+                <p className="player-focus-summary">{focusedPlayer} has {playerGoals} goal(s) and {playerPasses.length} pass attempts so far. {playerPasses.length ? "Average modeled pass distance: " + (playerPasses.reduce((sum,e) => sum + (e.pass_distance_m ?? 0),0) / playerPasses.length).toFixed(1) + "m." : "No passes recorded yet."}</p>
+                <div className="player-focus-events">
+                  {playerEvents.slice(-5).reverse().map(e => <button key={e.id} onClick={() => { setClock(e.second); setPlaying(false); }}><span>{formatTime(e.second)} · {e.description}</span><small>{e.id}</small></button>)}
+                </div>
+              </> : <p className="player-focus-summary">Track personal performance as synthetic match events unfold. Every entry links back to its event ID.</p>}
+            </section>
+
             <section className="panel stats-panel">
               <div className="panel-head">
                 <div><div className="section-kicker"><BarChart3 size={15} /> PERFORMANCE</div>
