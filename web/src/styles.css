@@ -135,3 +135,13 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 .rolling-evidence-events{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.rolling-evidence-events button{border:1px solid #415f47;background:#21332b;color:#d0f0be;border-radius:5px;padding:5px;font-size:10px}
 .rolling-waiting{padding:20px 24px;font-size:12px;color:#a9beb1;line-height:1.6}
 @media(max-width:620px){.rolling-intro{padding:0 16px 12px}.rolling-list{padding:0 12px}}
+
+/* Single time-ordered intelligence layer, with one set of audience controls. */
+.unified-intelligence-panel{padding-bottom:24px}
+.unified-feed{display:flex;flex-direction:column;gap:12px;padding:18px 20px 0}
+.unified-feed-item{margin:0;min-width:0}
+.unified-featured{border:1px solid #537047;background:#13251f;border-radius:10px;padding:18px}
+.unified-featured .insight-metric{margin-top:15px}
+.unified-featured .evidence{margin-top:12px}
+.rolling-method{font-size:10px;color:#92b0a3;line-height:1.6;margin-top:8px}
+@media(max-width:620px){.unified-feed{padding:14px 12px 0}.unified-featured{padding:14px}}
