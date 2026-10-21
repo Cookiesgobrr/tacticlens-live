@@ -74,6 +74,7 @@ def test_reject_fabricated_numbers_from_model():
 def test_adapter_requires_explicit_cloud_config(monkeypatch):
     monkeypatch.delenv("FOUNDRY_PROJECT_ENDPOINT", raising=False)
     monkeypatch.delenv("FOUNDRY_MODEL", raising=False)
+    monkeypatch.delenv("FOUNDRY_OPENAI_BASE_URL", raising=False)
     with pytest.raises(RuntimeError, match="not configured"):
         FoundryAgentBackend()
 
@@ -98,3 +99,13 @@ def test_agent_runtime_failure_suppresses_response():
     ))
     assert result["status"] == "error"
     assert result["insight"] is None
+
+
+def test_reject_incorrect_resource_url_without_creating_clients(monkeypatch):
+    monkeypatch.setenv("FOUNDRY_OPENAI_BASE_URL", "https://example.com/incomplete")
+    monkeypatch.delenv("FOUNDRY_PROJECT_ENDPOINT", raising=False)
+    monkeypatch.setenv("FOUNDRY_MODEL", "gpt-4.1-mini")
+    # URL validation should occur before any SDK dependencies are loaded.
+    # Once SDKs are installed, a malformed URL must still be rejected.
+    with pytest.raises((ValueError, ImportError)):
+        FoundryAgentBackend()

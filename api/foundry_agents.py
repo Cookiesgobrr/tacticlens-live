@@ -56,8 +56,8 @@ class FoundryAgentBackend:
     """Three distinct Agent Framework agents; injection permits free CI tests.
 
     Construct with agent_overrides for fake SDK agents. Otherwise the class
-    requires explicit FOUNDRY_PROJECT_ENDPOINT / FOUNDRY_MODEL and a locally
-    authenticated Azure CLI session, but makes no requests at construction.
+    requires FOUNDRY_MODEL and a matching resource or project endpoint plus an
+    authenticated Azure CLI session; it makes no requests at construction.
     """
 
     def __init__(self, agent_overrides: dict[str, Any] | None = None) -> None:
@@ -67,22 +67,53 @@ class FoundryAgentBackend:
             self.agents = agent_overrides
             return
 
-        endpoint = os.environ.get("FOUNDRY_PROJECT_ENDPOINT", "").strip()
+        # New Foundry's Continue in code panel exposes a resource-scoped
+        # OpenAI-compatible URL ending in /openai/v1. That URL is not the same
+        # as the project endpoint required by FoundryChatClient.
+        resource_url = os.environ.get("FOUNDRY_OPENAI_BASE_URL", "").strip()
+        project_endpoint = os.environ.get("FOUNDRY_PROJECT_ENDPOINT", "").strip()
         model = os.environ.get("FOUNDRY_MODEL", "").strip()
-        if not endpoint or not model:
+        if not model or not (resource_url or project_endpoint):
             raise RuntimeError(
-                "Foundry is not configured. Set FOUNDRY_PROJECT_ENDPOINT and "
-                "FOUNDRY_MODEL after confirming Azure credits and quota."
+                "Foundry is not configured. Set FOUNDRY_MODEL and either "
+                "FOUNDRY_OPENAI_BASE_URL (from Continue in code) or "
+                "FOUNDRY_PROJECT_ENDPOINT."
+            )
+        if resource_url and project_endpoint:
+            raise ValueError(
+                "Set only one endpoint variable: FOUNDRY_OPENAI_BASE_URL "
+                "or FOUNDRY_PROJECT_ENDPOINT."
             )
         from agent_framework import Agent
-        from agent_framework.foundry import FoundryChatClient
         from azure.identity import AzureCliCredential
 
-        client = FoundryChatClient(
-            project_endpoint=endpoint,
-            model=model,
-            credential=AzureCliCredential(),
-        )
+        if resource_url:
+            # Microsoft Agent Framework uses the Responses client at a
+            # full Azure /openai/v1 base URL.
+            if not (
+                resource_url.startswith("https://")
+                and resource_url.rstrip("/").endswith("/openai/v1")
+            ):
+                raise ValueError(
+                    "FOUNDRY_OPENAI_BASE_URL must be the HTTPS endpoint "
+                    "ending in /openai/v1 supplied by Foundry."
+                )
+            from agent_framework.openai import OpenAIChatClient
+
+            client = OpenAIChatClient(
+                model=model,
+                base_url=resource_url.rstrip("/"),
+                credential=AzureCliCredential(),
+            )
+        else:
+            # Foundry project endpoints remain supported separately.
+            from agent_framework.foundry import FoundryChatClient
+
+            client = FoundryChatClient(
+                project_endpoint=project_endpoint,
+                model=model,
+                credential=AzureCliCredential(),
+            )
         self.agents = {
             "insight": Agent(
                 client=client, name="TacticLensInsight",

@@ -15,7 +15,11 @@ from api.simulator import build_match
 async def main():
     parser = argparse.ArgumentParser(description="Run actual Microsoft Foundry agents")
     parser.add_argument("--at", type=int, default=4500, help="Replay time in seconds")
+    parser.add_argument("--confirm-cloud-cost", action="store_true",
+                        help="Explicitly allow up to three billable model calls")
     args = parser.parse_args()
+    if not args.confirm_cloud_cost:
+        parser.error("Cloud model calls consume Azure trial credits. Re-run with --confirm-cloud-cost when ready.")
     backend = FoundryAgentBackend()
     result = await run_pipeline(
         build_match(), at_second=args.at, backend=backend,
