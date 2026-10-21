@@ -57,6 +57,20 @@ def build_playback(match: dict, movement: dict) -> dict:
     segments = []
     ball_frames = []
     cursor = -1
+    first = events[0]
+    first_actor_id = first["team"] + ":" + first["player"]
+    first_idx = player_ids[first_actor_id]
+    # Illustrative warm-up before the first recorded synthetic event:
+    # a teammate controls the ball, makes one short visual handoff, then
+    # the first source-event actor carries into their recorded moment.
+    # The handoff is NOT appended to match["events"] or to match statistics.
+    supporter = next(
+        (i for i, p in enumerate(players)
+         if p["team"] == first["team"] and i != first_idx),
+        first_idx,
+    )
+    opening_start = max(1, first["second"] // 3)
+    opening_end = min(first["second"] - 1, opening_start + 3)
 
     for t in range(duration + 1):
         while cursor + 1 < len(events) and events[cursor + 1]["second"] <= t:
@@ -64,10 +78,20 @@ def build_playback(match: dict, movement: dict) -> dict:
         e = events[cursor] if cursor >= 0 else None
         nxt = events[cursor + 1] if cursor + 1 < len(events) else None
         if e is None:
-            next_id = events[0]["team"] + ":" + events[0]["player"]
-            owner_idx = player_ids[next_id]
-            bx, bz = _actor(movement, owner_idx, t)
-            ball_frames.append([round(bx, 2), round(bz, 2), 0.42, owner_idx, 0])
+            if supporter != first_idx and opening_start <= t < opening_end:
+                opening_from = _actor(movement, supporter, opening_start)
+                opening_to = _actor(movement, first_idx, opening_end)
+                duration_of_pass = max(1, opening_end - opening_start)
+                bx, bz, height = _flight(
+                    opening_from, opening_to, (t - opening_start) / duration_of_pass, 0.55
+                )
+                ball_frames.append([round(bx, 2), round(bz, 2),
+                                    round(height, 2), -1, 3])
+            else:
+                owner_idx = supporter if t < opening_start else first_idx
+                bx, bz = _actor(movement, owner_idx, t)
+                ball_frames.append([round(bx, 2), round(bz, 2),
+                                    0.42, owner_idx, 0])
             continue
 
         actor_id = e["team"] + ":" + e["player"]
@@ -177,5 +201,13 @@ def build_playback(match: dict, movement: dict) -> dict:
                         "inferred_handoff": 3, "inferred_restart": 4},
         "ball_frames": ball_frames,
         "segments": segments,
-        "method": "Ball follows a simulated controlling player, moves through source-linked pass/shot phases and interpolates inferred changes of possession. Source match event facts are unchanged.",
+        "opening_reconstruction": {
+            "before_first_recorded_event": first["second"],
+            "visual_handoff_start": opening_start,
+            "visual_handoff_end": opening_end,
+            "from_player_id": players[supporter]["id"],
+            "to_player_id": first_actor_id,
+            "disclaimer": "Illustrative pre-event opening; not a logged pass or statistic.",
+        },
+        "method": "Ball follows a simulated controlling player, moves through source-linked pass/shot phases and interpolates inferred changes of possession. The pre-event opening is explicitly illustrative; source match event facts remain unchanged.",
     }
