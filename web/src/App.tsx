@@ -28,10 +28,11 @@ interface OverlayCue {
   subtitle: string; source_event_ids: string[]; placement: string;
 }
 interface Recap { id: string; stage: string; at_second: number; ai_generated: boolean; score: Record<TeamId,number>; evidence_ids: string[]; narratives: Record<"en"|"ar",Record<Mode,string>>; method: string }
+interface RollingPattern { id: string; at_second: number; team: TeamId; type: string; headline: string; casual: string; analyst: string; broadcast: string; evidence_ids: string[]; baseline_ids: string[]; method: string; metric: { previous: number; recent: number; delta: number; name: string } }
 interface Match {
   match_id: string; title: string; disclaimer: string; seed: number;
   duration_seconds: number; teams: Team[]; events: MatchEvent[]; insights: Insight[];
-  overlays?: OverlayCue[]; recaps?: Recap[];
+  overlays?: OverlayCue[]; recaps?: Recap[]; rolling_patterns?: RollingPattern[];
 }
 interface Stats { passes: number; shots: number; goals: number;
   recoveries: number; pressures: number; control_seconds: number; control_share_pct: number }
@@ -236,6 +237,7 @@ function App() {
   const playerGoals = playerEvents.filter(e => e.kind === "goal").length;
   const milestones = useMemo(() => visible.filter(e =>
     ["goal", "shot", "recovery", "turnover"].includes(e.kind)).slice(-5).reverse(), [visible]);
+  const rolling = useMemo(() => (match?.rolling_patterns ?? []).filter(item => item.at_second <= clock).slice(-6).reverse(), [match, clock]);
   const insight = match?.insights.find(i => clock >= i.at_second);
   const verifiedAI = insight && foundryInsight?.id === insight.id
     && foundryInsight.at_second <= clock ? foundryInsight : null;
@@ -344,6 +346,31 @@ function App() {
                   <FastForward size={15} /> {speed}×
                 </button>
               </div>
+            </section>
+
+            <section className="panel rolling-panel">
+              <div className="panel-head between">
+                <div><div className="section-kicker"><Activity size={15} /> EVENT-DRIVEN INTELLIGENCE</div>
+                <h2>Patterns as play unfolds</h2></div>
+                <span className="proof-pill"><ShieldCheck size={14} /> SOURCE LINKED</span>
+              </div>
+              <p className="rolling-intro">Analyzed on every new synthetic event, not at fixed match minutes. These rolling alerts use code-based evidence checks; the separate Foundry narrative is shown below.</p>
+              {rolling.length ? <div className="rolling-list">
+                {rolling.map(item => <div key={item.id} className="rolling-card">
+                  <div className="rolling-meta"><span>{formatTime(item.at_second)} · {item.type.replaceAll("_", " ").toUpperCase()}</span><span>RULE-BASED</span></div>
+                  <h3>{item.headline}</h3>
+                  <p>{mode === "broadcast" ? item.broadcast : mode === "analyst" ? item.analyst : item.casual}</p>
+                  <div className="rolling-metric"><strong>{item.metric.previous} → {item.metric.recent}</strong><span>{item.metric.name} · previous vs recent five-minute windows</span></div>
+                  <details className="rolling-evidence"><summary>View {item.evidence_ids.length + item.baseline_ids.length} source events</summary>
+                    <div className="rolling-evidence-events">
+                      {[...item.baseline_ids, ...item.evidence_ids].map(id => {
+                        const event = match?.events.find(event => event.id === id);
+                        return event ? <button key={id} onClick={() => { setClock(event.second); setPlaying(false); }}>{id} · {formatTime(event.second)}</button> : null;
+                      })}
+                    </div>
+                  </details>
+                </div>)}
+              </div> : <div className="rolling-waiting">Watching for meaningful shifts in the synthetic match. Patterns will appear when enough events support a change.</div>}
             </section>
 
             <section className="panel intelligence-panel">
