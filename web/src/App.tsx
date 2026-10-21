@@ -1,3 +1,4 @@
+import { validateFoundryCache, type PublishedInsight } from "./foundry";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity, ArrowRight, BarChart3, ChevronRight, CircleHelp, Clock3,
@@ -159,6 +160,8 @@ function App() {
   const [showEvidence, setShowEvidence] = useState(true);
   const [focusedPlayer, setFocusedPlayer] = useState("");
   const [recapLanguage, setRecapLanguage] = useState<"en"|"ar">("en");
+  const [foundryInsight, setFoundryInsight] = useState<PublishedInsight | null>(null);
+  const [foundryFeedStatus, setFoundryFeedStatus] = useState<"loading"|"verified"|"pending"|"unavailable">("loading");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -177,6 +180,35 @@ function App() {
       });
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    if (!match) return;
+    const controller = new AbortController();
+    fetch("https://tacticlens-api-2927.azurewebsites.net/api/verified", {
+      signal: controller.signal, cache: "no-store"
+    })
+      .then(response => {
+        if (!response.ok) throw new Error("Foundry feed unavailable");
+        return response.json() as Promise<unknown>;
+      })
+      .then(payload => {
+        const checked = validateFoundryCache(payload, match);
+        if (checked) {
+          setFoundryInsight(checked);
+          setFoundryFeedStatus("verified");
+        } else {
+          setFoundryInsight(null);
+          setFoundryFeedStatus("pending");
+        }
+      })
+      .catch(error => {
+        if (error.name !== "AbortError") {
+          setFoundryInsight(null);
+          setFoundryFeedStatus("unavailable");
+        }
+      });
+    return () => controller.abort();
+  }, [match]);
 
   const duration = match?.duration_seconds ?? 5400;
   useEffect(() => {
@@ -205,6 +237,8 @@ function App() {
   const milestones = useMemo(() => visible.filter(e =>
     ["goal", "shot", "recovery", "turnover"].includes(e.kind)).slice(-5).reverse(), [visible]);
   const insight = match?.insights.find(i => clock >= i.at_second);
+  const verifiedAI = insight && foundryInsight?.id === insight.id
+    && foundryInsight.at_second <= clock ? foundryInsight : null;
   const activeOverlay = useMemo(() => (match?.overlays ?? [])
     .filter(cue => clock >= cue.start_second && clock < cue.end_second)
     .sort((a, b) => b.priority - a.priority)[0], [match, clock]);
@@ -328,14 +362,23 @@ function App() {
                   </button>;
                 })}
               </div>
+              <div className="ai-feed-status" role="status">
+                <span className={foundryFeedStatus === "verified" ? "ai-feed-dot verified" : "ai-feed-dot"} />
+                {foundryFeedStatus === "verified" ? "MICROSOFT FOUNDRY · VERIFIED AI RESULT AVAILABLE" :
+                  foundryFeedStatus === "loading" ? "CONNECTING TO AZURE VERIFIED INSIGHT FEED" :
+                  foundryFeedStatus === "unavailable" ? "AZURE FEED UNAVAILABLE · RULE-BASED REPLAY ACTIVE" :
+                  "AI RESULT PENDING · RULE-BASED REPLAY ACTIVE"}
+                <small>Cached read only · No AI request from this browser</small>
+              </div>
               {insight ? (
                 <div className="insight">
                   <div className="insight-top">
-                    <span className="insight-label"><span className="pulse" /> PATTERN DETECTED · 75'</span>
+                    <span className="insight-label"><span className="pulse" /> {verifiedAI ? "AZURE-VERIFIED AI · 75'" : "RULE-BASED PATTERN · 75'"}</span>
                     <span className="insight-id">#{insight.id}</span>
                   </div>
-                  <h3>{mode === "broadcast" ? insight.broadcast : insight.headline}</h3>
-                  {mode !== "broadcast" && <p>{mode === "fan" ? insight.casual : insight.analyst}</p>}
+                  <h3>{verifiedAI ? (mode === "broadcast" ? verifiedAI.modes.broadcast : verifiedAI.headline) : (mode === "broadcast" ? insight.broadcast : insight.headline)}</h3>
+                  {mode !== "broadcast" && <p>{verifiedAI ? verifiedAI.modes[mode] : (mode === "fan" ? insight.casual : insight.analyst)}</p>}
+                  {verifiedAI && <div className="ai-verification-trace"><ShieldCheck size={13} /> Model generated · Source IDs validated · Evidence gate approved · Independent verifier approved</div>}
                   <div className="insight-metric">
                     <div><small>PREVIOUS 10 MIN</small><strong>{insight.metric.previous}</strong></div>
                     <ArrowRight size={20} />

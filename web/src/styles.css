@@ -118,3 +118,9 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 .recap-entry h3{font-size:14px;line-height:1.55}.recap-entry p{font-size:12px;line-height:1.65;margin-top:8px;color:#bdcbc3}
 .recap-entry .recap-method{font-size:10px;color:#899e91}.recap-pending{margin:8px 20px 20px;color:#bdcbc3;font-size:12px;line-height:1.7}
 .recap-citations{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}.recap-citations button{font-size:9px;background:#22312d;color:#caebc0;border:1px solid #385044;border-radius:4px;padding:5px}
+
+/* Cached Microsoft Foundry output: distinguish live verified copy from templates */
+.ai-feed-status{margin:14px 24px 0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;border:1px solid #385046;background:#172824;border-radius:7px;color:#b6c8bf;padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.ai-feed-status small{width:100%;font-size:9px;font-weight:400;letter-spacing:0;color:#8fada0;padding-left:16px}
+.ai-feed-dot{width:8px;height:8px;background:#889793;border-radius:50%}.ai-feed-dot.verified{background:#c6fa65;box-shadow:0 0 9px #c6fa6570}
+.ai-verification-trace{display:flex;align-items:center;gap:7px;padding:10px 12px;margin-top:12px;border:1px solid #3d633f;border-radius:6px;color:#d5efc8;font-size:10px;line-height:1.5}
