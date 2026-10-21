@@ -1,36 +1,36 @@
-# Optional Microsoft Foundry integration
+# TacticLens Live: Microsoft Foundry integration
 
-This code provides three separate **real Microsoft Agent Framework** agents, backed by the Foundry Responses model API, with distinct prompts and sequential handoffs:
+The existing public GitHub Pages dashboard remains a **static synthetic preview** and does **not** call Foundry. The existing `/api/agent-demo` endpoint remains deterministic.
 
-- Insight: draft a structured synthetic-football claim.
-- Verification: independently evaluate the claim.
-- Presentation: write fan, analyst and broadcast copy.
+The actual cloud adapter contains **three distinct Microsoft Agent Framework agents**: Insight, Verification, and Presentation. Each runs against one Foundry model deployment. The existing code-only Evidence Gate independently verifies source event IDs and counts before the model verifier runs. Presentation is checked for unsupported numbers; failures fall back to deterministic text or fail closed.
 
-The deterministic evidence gate in api/agent_pipeline.py independently verifies source event IDs and numeric counts before a verification or presentation stage runs. A failure suppresses unverified insights; fabricated output numbers trigger a deterministic fallback.
+## Confirmed Foundry deployment
 
-## Current status
+Your Foundry "Continue in code" screen shows an OpenAI-compatible Responses endpoint and deployment:
+- Resource endpoint: `https://tarunjacob2927-8313-resource.services.ai.azure.com/openai/v1`
+- Deployment name: `gpt-4.1-mini`
+- Authentication: Microsoft Entra ID, via a local Azure CLI sign-in; **no API key is needed in code**.
 
-The integration code is implemented with injectable fake agents and can be tested for free. **Cloud inference has NOT been executed, and the application is NOT deployed on Azure.** The live web dashboard and /api/agent-demo continue to use the free offline implementation.
+The resource URL above is a public service endpoint, not a secret. Do **not** copy your API key from Foundry or store it in GitHub.
 
-## Only after confirming your free credits, permissions and spending limits
+## Run when ready (one intentionally billable test)
 
-1. Create or obtain a Foundry project and deploy an allowed model.
-2. Install Azure CLI and log in: az login.
-3. In your Python virtual environment install: pip install -r api/requirements-foundry.txt.
-4. Export your own project details in your terminal (never commit secrets):
-   export FOUNDRY_PROJECT_ENDPOINT="your-project-endpoint"
-   export FOUNDRY_MODEL="your-model-deployment-name"
-5. Invoke cloud inference **only deliberately**:
-   python -m api.run_foundry --at 4500
+From the repository root on your Mac:
 
-Use the full project endpoint supplied by Foundry. This CLI may incur inference charges. We have deliberately not exposed it as a public unauthenticated HTTP route. Revisit authentication, quotas and spending caps before deploying a service that invokes models automatically.
+```bash
+git switch main && git pull origin main
+source .venv/bin/activate
+python -m pip install -r api/requirements-foundry.txt
+az login
+export FOUNDRY_OPENAI_BASE_URL="https://tarunjacob2927-8313-resource.services.ai.azure.com/openai/v1"
+export FOUNDRY_MODEL="gpt-4.1-mini"
+python -m api.run_foundry --at 4500 --confirm-cloud-cost
+```
 
-## Testing without Azure
+Do not run the final command until you're comfortable using a small amount of Azure trial credit. The CLI requires `--confirm-cloud-cost` and deliberately does not expose inference via an unauthenticated HTTP route. Running it once uses up to three model invocations and may incur small trial-credit charges.
 
-    python -m pytest api/tests -q
+If you use a Foundry **project** endpoint instead, set only `FOUNDRY_PROJECT_ENDPOINT`; unset `FOUNDRY_OPENAI_BASE_URL`.
 
-The tests use in-memory fake agents implementing the actual Agent.run(message) interface and require no credentials.
+Use `python -m pytest api/tests -q` to run offline tests with no API calls. The cloud integration has **not** been proven to work end-to-end until the explicit CLI test succeeds. If that test returns `status: error`, do not assume success; investigate Azure permissions and SDK compatibility.
 
-### Documentation
-
-https://learn.microsoft.com/en-us/agent-framework/get-started/your-first-agent?pivots=programming-language-python
+Microsoft Agent Framework guidance: https://learn.microsoft.com/en-us/agent-framework/agents/providers/openai
