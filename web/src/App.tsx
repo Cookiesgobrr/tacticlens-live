@@ -1,5 +1,5 @@
 import PerspectiveStudio, { type Perspective, type ComparisonMoment } from "./PerspectiveStudio";
-import Replay3D, { type MovementFeed, type ReplayCamera } from "./Replay3D";
+import Replay3D, { type MovementFeed, type BallPlayback, type ReplayCamera } from "./Replay3D";
 import { validateFoundryCache, type PublishedInsight } from "./foundry";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -34,7 +34,7 @@ interface RollingPattern { id: string; at_second: number; team: TeamId; type: st
 interface Match {
   match_id: string; title: string; disclaimer: string; seed: number;
   duration_seconds: number; teams: Team[]; events: MatchEvent[]; insights: Insight[];
-  overlays?: OverlayCue[]; recaps?: Recap[]; rolling_patterns?: RollingPattern[]; movement?: MovementFeed;
+  overlays?: OverlayCue[]; recaps?: Recap[]; rolling_patterns?: RollingPattern[]; movement?: MovementFeed; playback?: BallPlayback;
 }
 interface Stats { passes: number; shots: number; goals: number;
   recoveries: number; pressures: number; control_seconds: number; control_share_pct: number }
@@ -373,7 +373,7 @@ function App() {
                   <option value="player">Player follow</option>
                 </select>}
               </div>
-              {pitchView === "3d" && match ? <Replay3D events={match.events} movement={match.movement} clock={clock}
+              {pitchView === "3d" && match ? <Replay3D events={match.events} movement={match.movement} playback={match.playback} clock={clock}
                 cameraMode={replayCamera} focusedPlayer={focusedPlayer} favoriteTeam={favoriteTeam}
                 viewerLens={activePerspective ?? "fan"}
                 onSeek={second => {setClock(Math.max(0, second));setPlaying(true);}} /> :
