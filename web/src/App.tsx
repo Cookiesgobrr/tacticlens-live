@@ -1,3 +1,4 @@
+import PerspectiveStudio, { type Perspective, type ComparisonMoment } from "./PerspectiveStudio";
 import Replay3D, { type MovementFeed, type ReplayCamera } from "./Replay3D";
 import { validateFoundryCache, type PublishedInsight } from "./foundry";
 import { useEffect, useMemo, useState } from "react";
@@ -159,6 +160,7 @@ function App() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [mode, setMode] = useState<Mode>("fan");
+  const [activePerspective, setActivePerspective] = useState<Perspective | null>(null);
   const [showEvidence, setShowEvidence] = useState(true);
   const [focusedPlayer, setFocusedPlayer] = useState(() => localStorage.getItem("tacticlens.player") || "");
   const [favoriteTeam, setFavoriteTeam] = useState<"all" | TeamId>(() => {
@@ -286,6 +288,25 @@ function App() {
   ];
 
 
+  const activatePerspective = (profile: Perspective, moment: ComparisonMoment, player: string, replay: boolean) => {
+    setPlaying(false);
+    setPitchView("3d");
+    setClock(replay ? Math.max(0, moment.at_second - 3) : moment.at_second);
+    setFocusMetric("all");
+    setActivePerspective(profile);
+    if (profile === "analyst") {
+      setMode("analyst"); setReplayCamera("tactical");
+    } else if (profile === "fan") {
+      setMode("fan"); setReplayCamera("broadcast");
+    } else if (profile === "club") {
+      setFavoriteTeam(moment.team); setMode("fan"); setReplayCamera("broadcast");
+    } else {
+      setFocusedPlayer(player); setMode("analyst");
+      setReplayCamera(player ? "player" : "broadcast");
+    }
+    if (replay) setPlaying(true);
+  };
+
   return (
     <div className="app-shell">
       <header className="nav">
@@ -368,6 +389,15 @@ function App() {
             </label>
           </div>
         </section>
+        {match && <PerspectiveStudio
+          clock={clock} events={match.events} insights={match.insights}
+          patterns={match.rolling_patterns ?? []} verifiedInsight={foundryInsight}
+          favoriteTeam={favoriteTeam} favoritePlayer={focusedPlayer}
+          active={activePerspective}
+          onActivate={(profile, moment, player) => activatePerspective(profile, moment, player, false)}
+          onReplay={(profile, moment, player) => activatePerspective(profile, moment, player, true)}
+          onSeekEvidence={second => { setClock(second); setPlaying(false); setPitchView("3d"); }}
+        />}
         <div className="dashboard-grid">
           <div className="main-column">
             <section className="panel pitch-panel">
