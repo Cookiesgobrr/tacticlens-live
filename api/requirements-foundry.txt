@@ -1,4 +1,5 @@
 -r requirements.txt
-# Optional cloud integration. Install only after Azure credits/model quotas are approved.
+# Optional Microsoft Agent Framework providers and Entra ID credentials.
+agent-framework-openai
 agent-framework-foundry
 azure-identity
