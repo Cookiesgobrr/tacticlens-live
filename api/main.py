@@ -7,6 +7,7 @@ from api.overlays import build_overlay_cues, cues_at
 from api.players import player_stats
 from api.recaps import build_match_recaps
 from api.rolling_patterns import detect_rolling_patterns
+from api.movement import build_movement
 
 app = FastAPI(title="TacticLens Live", version="0.1.0")
 MATCH = build_match()
@@ -21,7 +22,7 @@ def health():
 
 @app.get("/api/match")
 def get_match():
-    return {**MATCH, "insights": INSIGHTS, "rolling_patterns": detect_rolling_patterns(MATCH["events"])}
+    return {**MATCH, "movement": build_movement(MATCH), "insights": INSIGHTS, "rolling_patterns": detect_rolling_patterns(MATCH["events"])}
 
 
 @app.get("/api/stats")
