@@ -388,7 +388,7 @@ function App() {
               {pitchView === "3d" && match ? <Replay3D events={match.events} clock={clock}
                 cameraMode={replayCamera} focusedPlayer={focusedPlayer} favoriteTeam={favoriteTeam}
                 onSeek={second => {setClock(second);setPlaying(false);}} /> :
-                <Pitch recent={recent} highlighted={highlighted} />
+                <Pitch recent={recent} highlighted={highlighted} />}
               {activeOverlay && <div className="broadcast-overlay" role="status" aria-live="polite">
                 <div className="broadcast-overlay-eyebrow">
                   <span className="light-dot" /> BROADCAST CUE · {formatTime(activeOverlay.start_second)}
