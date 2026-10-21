@@ -328,9 +328,8 @@ function App() {
         <section className="hero">
           <div>
             <div className="eyebrow"><Sparkles size={14} /> FOOTBALL, DECODED</div>
-            <h1>See beyond <em>the score.</em></h1>
-            <p>Every moment has a story. Explore real-time simulated match intelligence,
-              with every insight grounded in events you can inspect.</p>
+            <h1>Football, from your perspective.</h1>
+            <p>Play the fictional match, follow the action in 3D, and explore evidence-backed intelligence at your pace.</p>
           </div>
           <div className="hero-chip"><ShieldCheck size={19} />
             <span>100% traceable insights<small>Deterministic analytics · No fabricated stats</small></span>
@@ -356,54 +355,12 @@ function App() {
             <div className="team-crest">S</div></div>
         </section>
 
-        <section className="panel preference-panel" aria-label="Personalize your match experience">
-          <div className="preference-head">
-            <div><div className="section-kicker"><Target size={15} /> YOUR MATCH, YOUR PERSPECTIVE</div>
-            <h2>Personalize the match</h2></div>
-            <span>Preferences saved on this device</span>
-          </div>
-          <div className="preference-controls">
-            <label>Favorite club
-              <select value={favoriteTeam} onChange={e => setFavoriteTeam(e.target.value as TeamId | "all")}>
-                <option value="all">Both teams</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </label>
-            <label>Follow a player
-              <select value={focusedPlayer} onChange={e => {
-                setFocusedPlayer(e.target.value);
-                if (e.target.value) setReplayCamera("player");
-              }}>
-                <option value="">All players</option>
-                {players.map(player => <option key={player} value={player}>{player}</option>)}
-              </select>
-            </label>
-            <label>Focus statistic
-              <select value={focusMetric} onChange={e => setFocusMetric(e.target.value)}>
-                <option value="all">Everything</option>
-                <option value="recoveries">Recoveries</option>
-                <option value="pressure">Pressing</option>
-                <option value="passing">Passing</option>
-                <option value="shots">Shots</option>
-              </select>
-            </label>
-          </div>
-        </section>
-        {match && <PerspectiveStudio
-          clock={clock} events={match.events} insights={match.insights}
-          patterns={match.rolling_patterns ?? []} verifiedInsight={foundryInsight}
-          favoriteTeam={favoriteTeam} favoritePlayer={focusedPlayer}
-          active={activePerspective}
-          onActivate={(profile, moment, player) => activatePerspective(profile, moment, player, false)}
-          onReplay={(profile, moment, player) => activatePerspective(profile, moment, player, true)}
-          onSeekEvidence={second => { setClock(second); setPlaying(false); setPitchView("3d"); }}
-        />}
         <div className="dashboard-grid">
           <div className="main-column">
             <section className="panel pitch-panel">
               <div className="panel-head">
                 <div><div className="section-kicker"><Target size={15} /> MATCH VISION</div>
-                  <h2>Live tactical map</h2></div>
+                  <h2>Match Studio</h2></div>
                 <span className="meta-outline"><span className="light-dot" /> EVENT STREAM ACTIVE</span>
               </div>
               <div className="replay-view-switch" role="group" aria-label="Replay presentation">
@@ -449,6 +406,111 @@ function App() {
               </div>
             </section>
 
+          </div>
+
+          <aside className="side-column">
+            {match && <PerspectiveStudio
+              clock={clock} events={match.events} insights={match.insights}
+              patterns={match.rolling_patterns ?? []} verifiedInsight={foundryInsight}
+              favoriteTeam={favoriteTeam} favoritePlayer={focusedPlayer}
+              active={activePerspective}
+              onActivate={(profile, moment, player) => activatePerspective(profile, moment, player, false)}
+              onReplay={(profile, moment, player) => activatePerspective(profile, moment, player, true)}
+              onSeekEvidence={second => { setClock(second); setPlaying(false); setPitchView("3d"); }}
+            />}
+            <div className="panel match-pulse">
+              <div className="lens-topline"><span><Activity size={14} /> LIVE MATCH PULSE</span><span>{formatTime(clock)}</span></div>
+              <div className="pulse-metrics">
+                <div><strong>{stats.north.passes + stats.south.passes}</strong><small>Passes</small></div>
+                <div><strong>{stats.north.shots + stats.south.shots}</strong><small>Shots</small></div>
+                <div><strong>{stats.north.recoveries + stats.south.recoveries}</strong><small>Recoveries</small></div>
+              </div>
+            </div>
+            <section className="panel recaps-panel">
+              <div className="panel-head"><div><div className="section-kicker"><Sparkles size={15} /> MATCH STORY</div><h2>Automated recaps</h2></div></div>
+              <div className="recap-languages" role="group" aria-label="Recap language">
+                <button aria-pressed={recapLanguage === "en"} onClick={() => setRecapLanguage("en")}>English</button>
+                <button aria-pressed={recapLanguage === "ar"} onClick={() => setRecapLanguage("ar")}>العربية</button>
+              </div>
+              {(match?.recaps ?? []).filter(recap => clock >= recap.at_second).map(recap => <article key={recap.id} className="recap-entry" dir={recapLanguage === "ar" ? "rtl" : "ltr"}>
+                <div className="recap-meta"><span>{recap.stage === "half_time" ? "HALF-TIME" : "FULL-TIME"} · {formatTime(recap.at_second)}</span><span>RULE-BASED · SYNTHETIC</span></div>
+                <h3>{recap.narratives[recapLanguage][mode === "broadcast" ? "broadcast" : "fan"]}</h3>
+                {mode === "analyst" && <p>{recap.narratives[recapLanguage].analyst}</p>}
+                <p className="recap-method">{recap.method}</p>
+                <div className="recap-citations">{recap.evidence_ids.map(id => {
+                  const event = match?.events.find(e => e.id === id);
+                  return event ? <button key={id} title={event.description} onClick={() => {setClock(event.second);setPlaying(false);}}>{id} · {formatTime(event.second)}</button> : null;
+                })}</div>
+              </article>)}
+              {!match?.recaps?.some(recap => clock >= recap.at_second) && <p className="recap-pending">The half-time recap unlocks at 45:00 and full-time recap at 90:00. Seek the replay to explore each report.</p>}
+            </section>
+
+            <section className="panel player-panel">
+              <div className="panel-head"><div><div className="section-kicker"><Target size={15} /> PLAYER FOCUS</div><h2>Follow a player</h2></div></div>
+              <label htmlFor="player-focus-select" className="player-focus-label">Choose a fictional player</label>
+              <select id="player-focus-select" className="player-focus-select" value={focusedPlayer} onChange={e => setFocusedPlayer(e.target.value)}>
+                <option value="">Select player</option>
+                {players.map(player => <option key={player} value={player}>{player}</option>)}
+              </select>
+              {focusedPlayer ? <>
+                <div className="player-focus-metrics">
+                  <span><strong>{playerPasses.length}</strong><small>Pass attempts</small></span>
+                  <span><strong>{playerAccuracy === null ? "—" : playerAccuracy + "%"}</strong><small>Pass accuracy</small></span>
+                  <span><strong>{playerRecoveries}</strong><small>Recoveries</small></span>
+                  <span><strong>{playerShots}</strong><small>Shots</small></span>
+                </div>
+                <p className="player-focus-summary">{focusedPlayer} has {playerGoals} goal(s) and {playerPasses.length} pass attempts so far. {playerPasses.length ? "Average modeled pass distance: " + (playerPasses.reduce((sum,e) => sum + (e.pass_distance_m ?? 0),0) / playerPasses.length).toFixed(1) + "m." : "No passes recorded yet."}</p>
+                <div className="player-focus-events">
+                  {playerEvents.slice(-5).reverse().map(e => <button key={e.id} onClick={() => { setClock(e.second); setPlaying(false); }}><span>{formatTime(e.second)} · {e.description}</span><small>{e.id}</small></button>)}
+                </div>
+              </> : <p className="player-focus-summary">Track personal performance as synthetic match events unfold. Every entry links back to its event ID.</p>}
+            </section>
+
+            <section className="panel stats-panel">
+              <div className="panel-head">
+                <div><div className="section-kicker"><BarChart3 size={15} /> PERFORMANCE</div>
+                  <h2>Match statistics</h2></div>
+              </div>
+              <div className="stats-labels">
+                <span><i className="legend-dot north" /> NOR</span>
+                <span>TEAM COMPARISON</span>
+                <span>SOU <i className="legend-dot south" /></span>
+              </div>
+              <StatBar label="Control share*" left={stats.north.control_share_pct}
+                right={stats.south.control_share_pct} suffix="%" />
+              <StatBar label="Passes" left={stats.north.passes} right={stats.south.passes} />
+              <StatBar label="Shots incl. goals" left={stats.north.shots} right={stats.south.shots} />
+              <StatBar label="Recoveries" left={stats.north.recoveries} right={stats.south.recoveries} />
+              <StatBar label="Pressures" left={stats.north.pressures} right={stats.south.pressures} />
+              <div className="stats-note">*Synthetic on-ball control time, not measured match possession.</div>
+            </section>
+
+            <section className="panel moments-panel">
+              <div className="panel-head">
+                <div><div className="section-kicker"><Flag size={15} /> MATCH FEED</div>
+                  <h2>Key moments</h2></div>
+                <span className="small-counter">{visible.length} events</span>
+              </div>
+              <div className="moment-feed">
+                {milestones.length ? milestones.map(e =>
+                  <button className="moment" key={e.id} onClick={() => { setClock(e.second); setPlaying(false); }}>
+                    <span className="moment-time">{formatTime(e.second)}</span>
+                    <span className={"moment-dot " + e.team} />
+                    <span className="moment-copy"><strong>{e.kind === "goal" ? "GOAL" : e.kind.toUpperCase()}</strong>
+                      <small>{e.description}</small></span>
+                    <ChevronRight size={15} />
+                  </button>
+                ) : <div className="moment-empty">Press play or move the timeline to explore match events.</div>}
+              </div>
+            </section>
+
+            <div className="context-note">
+              <ShieldCheck size={20} />
+              <div><strong>Built for trust.</strong><p>Every statistic is calculated in code. Every detected insight cites the exact fictional events behind it.</p></div>
+            </div>
+          </aside>
+        </div>
+        <div className="analysis-workspace" id="match-intelligence">
             <section className="panel intelligence-panel unified-intelligence-panel">
               <div className="panel-head between">
                 <div>
@@ -558,92 +620,6 @@ function App() {
                   Patterns will appear as soon as the evidence supports them.</p>
               </div>}
             </section>
-          </div>
-
-          <aside className="side-column">
-            <section className="panel recaps-panel">
-              <div className="panel-head"><div><div className="section-kicker"><Sparkles size={15} /> MATCH STORY</div><h2>Automated recaps</h2></div></div>
-              <div className="recap-languages" role="group" aria-label="Recap language">
-                <button aria-pressed={recapLanguage === "en"} onClick={() => setRecapLanguage("en")}>English</button>
-                <button aria-pressed={recapLanguage === "ar"} onClick={() => setRecapLanguage("ar")}>العربية</button>
-              </div>
-              {(match?.recaps ?? []).filter(recap => clock >= recap.at_second).map(recap => <article key={recap.id} className="recap-entry" dir={recapLanguage === "ar" ? "rtl" : "ltr"}>
-                <div className="recap-meta"><span>{recap.stage === "half_time" ? "HALF-TIME" : "FULL-TIME"} · {formatTime(recap.at_second)}</span><span>RULE-BASED · SYNTHETIC</span></div>
-                <h3>{recap.narratives[recapLanguage][mode === "broadcast" ? "broadcast" : "fan"]}</h3>
-                {mode === "analyst" && <p>{recap.narratives[recapLanguage].analyst}</p>}
-                <p className="recap-method">{recap.method}</p>
-                <div className="recap-citations">{recap.evidence_ids.map(id => {
-                  const event = match?.events.find(e => e.id === id);
-                  return event ? <button key={id} title={event.description} onClick={() => {setClock(event.second);setPlaying(false);}}>{id} · {formatTime(event.second)}</button> : null;
-                })}</div>
-              </article>)}
-              {!match?.recaps?.some(recap => clock >= recap.at_second) && <p className="recap-pending">The half-time recap unlocks at 45:00 and full-time recap at 90:00. Seek the replay to explore each report.</p>}
-            </section>
-
-            <section className="panel player-panel">
-              <div className="panel-head"><div><div className="section-kicker"><Target size={15} /> PLAYER FOCUS</div><h2>Follow a player</h2></div></div>
-              <label htmlFor="player-focus-select" className="player-focus-label">Choose a fictional player</label>
-              <select id="player-focus-select" className="player-focus-select" value={focusedPlayer} onChange={e => setFocusedPlayer(e.target.value)}>
-                <option value="">Select player</option>
-                {players.map(player => <option key={player} value={player}>{player}</option>)}
-              </select>
-              {focusedPlayer ? <>
-                <div className="player-focus-metrics">
-                  <span><strong>{playerPasses.length}</strong><small>Pass attempts</small></span>
-                  <span><strong>{playerAccuracy === null ? "—" : playerAccuracy + "%"}</strong><small>Pass accuracy</small></span>
-                  <span><strong>{playerRecoveries}</strong><small>Recoveries</small></span>
-                  <span><strong>{playerShots}</strong><small>Shots</small></span>
-                </div>
-                <p className="player-focus-summary">{focusedPlayer} has {playerGoals} goal(s) and {playerPasses.length} pass attempts so far. {playerPasses.length ? "Average modeled pass distance: " + (playerPasses.reduce((sum,e) => sum + (e.pass_distance_m ?? 0),0) / playerPasses.length).toFixed(1) + "m." : "No passes recorded yet."}</p>
-                <div className="player-focus-events">
-                  {playerEvents.slice(-5).reverse().map(e => <button key={e.id} onClick={() => { setClock(e.second); setPlaying(false); }}><span>{formatTime(e.second)} · {e.description}</span><small>{e.id}</small></button>)}
-                </div>
-              </> : <p className="player-focus-summary">Track personal performance as synthetic match events unfold. Every entry links back to its event ID.</p>}
-            </section>
-
-            <section className="panel stats-panel">
-              <div className="panel-head">
-                <div><div className="section-kicker"><BarChart3 size={15} /> PERFORMANCE</div>
-                  <h2>Match statistics</h2></div>
-              </div>
-              <div className="stats-labels">
-                <span><i className="legend-dot north" /> NOR</span>
-                <span>TEAM COMPARISON</span>
-                <span>SOU <i className="legend-dot south" /></span>
-              </div>
-              <StatBar label="Control share*" left={stats.north.control_share_pct}
-                right={stats.south.control_share_pct} suffix="%" />
-              <StatBar label="Passes" left={stats.north.passes} right={stats.south.passes} />
-              <StatBar label="Shots incl. goals" left={stats.north.shots} right={stats.south.shots} />
-              <StatBar label="Recoveries" left={stats.north.recoveries} right={stats.south.recoveries} />
-              <StatBar label="Pressures" left={stats.north.pressures} right={stats.south.pressures} />
-              <div className="stats-note">*Synthetic on-ball control time, not measured match possession.</div>
-            </section>
-
-            <section className="panel moments-panel">
-              <div className="panel-head">
-                <div><div className="section-kicker"><Flag size={15} /> MATCH FEED</div>
-                  <h2>Key moments</h2></div>
-                <span className="small-counter">{visible.length} events</span>
-              </div>
-              <div className="moment-feed">
-                {milestones.length ? milestones.map(e =>
-                  <button className="moment" key={e.id} onClick={() => { setClock(e.second); setPlaying(false); }}>
-                    <span className="moment-time">{formatTime(e.second)}</span>
-                    <span className={"moment-dot " + e.team} />
-                    <span className="moment-copy"><strong>{e.kind === "goal" ? "GOAL" : e.kind.toUpperCase()}</strong>
-                      <small>{e.description}</small></span>
-                    <ChevronRight size={15} />
-                  </button>
-                ) : <div className="moment-empty">Press play or move the timeline to explore match events.</div>}
-              </div>
-            </section>
-
-            <div className="context-note">
-              <ShieldCheck size={20} />
-              <div><strong>Built for trust.</strong><p>Every statistic is calculated in code. Every detected insight cites the exact fictional events behind it.</p></div>
-            </div>
-          </aside>
         </div>
         <footer>
           <div><span className="light-dot" /> TACTICLENS LIVE · EXPERIMENTAL PROTOTYPE</div>
