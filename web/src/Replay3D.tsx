@@ -222,7 +222,7 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
         }
         if (flight(e) && delta > flightTime) {
           const landed = trajectory(e, 1);
-          if (next && upcoming && upcoming.second > e.second + flightTime) {
+          if (upcoming && upcoming.second > e.second + flightTime) {
             const fraction = (t - e.second - flightTime) / (upcoming.second - e.second - flightTime);
             const [nx, nz] = toPitch(upcoming.x, upcoming.y);
             ballPosition = new THREE.Vector3(blend(landed.x, nx, fraction), 0.4, blend(landed.z, nz, fraction));
