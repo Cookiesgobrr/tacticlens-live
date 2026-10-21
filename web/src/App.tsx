@@ -367,7 +367,7 @@ function App() {
                 <button aria-pressed={pitchView === "3d"} onClick={() => setPitchView("3d")}>3D Match Studio</button>
                 <button aria-pressed={pitchView === "2d"} onClick={() => setPitchView("2d")}>2D Event Map</button>
                 {pitchView === "3d" && <select aria-label="3D camera" value={replayCamera}
-                  onChange={e => setReplayCamera(e.target.value as ReplayCamera)}>
+                  onChange={e => { const next = e.target.value as ReplayCamera; setReplayCamera(next); if (next === "player" && !focusedPlayer && players.length) setFocusedPlayer(players[0]); }}>
                   <option value="broadcast">Broadcast camera</option>
                   <option value="tactical">Tactical camera</option>
                   <option value="player">Player follow</option>
