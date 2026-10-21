@@ -205,9 +205,9 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
       if (e) {
         const delta = t - e.second;
         const flightTime = e.kind === "pass" ? 2.4 : 1.6;
+        const [originX, originZ] = toPitch(e.x, e.y);
         let ballPosition = flight(e) ? trajectory(e, Math.min(1, delta / flightTime)) :
-          new THREE.Vector3(...[...toPitch(e.x, e.y).slice(0, 1), 0.4,
-            toPitch(e.x, e.y)[1]] as [number, number, number]);
+          new THREE.Vector3(originX, 0.4, originZ);
         if (upcoming && delta > flightTime && upcoming.second > e.second + flightTime) {
           const [nx, nz] = toPitch(upcoming.x, upcoming.y);
           const fraction = (t - e.second - flightTime) / (upcoming.second - e.second - flightTime);
