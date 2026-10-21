@@ -157,7 +157,7 @@ function App() {
   const [error, setError] = useState("");
   const [clock, setClock] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(4);
+  const [speed, setSpeed] = useState(1);
   const [mode, setMode] = useState<Mode>("fan");
   const [showEvidence, setShowEvidence] = useState(true);
   const [focusedPlayer, setFocusedPlayer] = useState(() => localStorage.getItem("tacticlens.player") || "");
@@ -225,7 +225,8 @@ function App() {
   useEffect(() => {
     if (!playing) return;
     const timer = window.setInterval(() => {
-      setClock(previous => Math.min(duration, previous + speed * 5));
+      // Use real playback seconds so a pass lasts long enough to see its ball flight.
+      setClock(previous => Math.min(duration, previous + speed * 0.1));
     }, 100);
     return () => window.clearInterval(timer);
   }, [playing, speed, duration]);
@@ -387,7 +388,7 @@ function App() {
               </div>
               {pitchView === "3d" && match ? <Replay3D events={match.events} clock={clock}
                 cameraMode={replayCamera} focusedPlayer={focusedPlayer} favoriteTeam={favoriteTeam}
-                onSeek={second => {setClock(second);setPlaying(false);}} /> :
+                onSeek={second => {setClock(Math.max(0, second));setPlaying(true);}} /> :
                 <Pitch recent={recent} highlighted={highlighted} />}
               {activeOverlay && <div className="broadcast-overlay" role="status" aria-live="polite">
                 <div className="broadcast-overlay-eyebrow">
@@ -412,7 +413,7 @@ function App() {
                   onChange={e => setClock(Number(e.target.value))} />
                 <span className="small-time">90:00</span>
                 <button className="speed-button" aria-label="Change replay speed"
-                  onClick={() => setSpeed(s => s === 1 ? 4 : s === 4 ? 12 : 1)}>
+                  onClick={() => setSpeed(s => s === 1 ? 2 : s === 2 ? 4 : s === 4 ? 8 : 1)}>
                   <FastForward size={15} /> {speed}×
                 </button>
               </div>

@@ -140,7 +140,7 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
     const sun = new THREE.DirectionalLight(0xffffff, 1.8);
     sun.position.set(-25, 60, -30); scene.add(sun);
     const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 320);
-    camera.position.set(0, 63, 98);
+    camera.position.set(0, 53, 80);
     const field = new THREE.Mesh(new THREE.PlaneGeometry(110, 75),
       new THREE.MeshStandardMaterial({ color: 0x174938, roughness: 0.9 }));
     field.rotation.x = -Math.PI / 2; scene.add(field);
@@ -174,8 +174,11 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
     scene.add(ball);
     const trailMat = new THREE.LineBasicMaterial({ color: 0x93ddff, transparent: true, opacity: 0.95 });
     const trail = new THREE.Line(new THREE.BufferGeometry(), trailMat);
+    const receiverMarker = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.45, 32), new THREE.MeshBasicMaterial({ color: 0x9eeaff, side: THREE.DoubleSide }));
+    receiverMarker.rotation.x = -Math.PI / 2; receiverMarker.position.y = 0.12;
+    scene.add(receiverMarker);
     scene.add(trail);
-    let lastTrail = "", raf = 0, destroyed = false;
+    let lastTrail = "", lastFraction = -1, raf = 0, destroyed = false;
     let lastFrame = performance.now();
     const wantedCamera = new THREE.Vector3(), target = new THREE.Vector3();
     const lookAt = new THREE.Vector3();
@@ -202,30 +205,56 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
         actor.halo.scale.setScalar(props.focusedPlayer === actor.name ? 1.2 : 0.77);
       }
       const ix = before(events, t), e = events[ix], upcoming = events[ix + 1];
+      receiverMarker.visible = false;
       if (e) {
-        const delta = t - e.second;
-        const flightTime = e.kind === "pass" ? 2.4 : 1.6;
+        const delta = Math.max(0, t - e.second);
+        const flightTime = e.kind === "pass" ? 2.7 : 2.1;
         const [originX, originZ] = toPitch(e.x, e.y);
-        let ballPosition = flight(e) ? trajectory(e, Math.min(1, delta / flightTime)) :
-          new THREE.Vector3(originX, 0.4, originZ);
-        if (upcoming && delta > flightTime && upcoming.second > e.second + flightTime) {
-          const [nx, nz] = toPitch(upcoming.x, upcoming.y);
-          const fraction = (t - e.second - flightTime) / (upcoming.second - e.second - flightTime);
-          ballPosition = new THREE.Vector3(blend(ballPosition.x, nx, fraction), 0.4, blend(ballPosition.z, nz, fraction));
+        const actor = actors.find(p => p.name === e.player && p.team === e.team);
+        const flightActive = flight(e) && delta <= flightTime;
+        // A pass starts at the event's synthetic origin, and the landing
+        // position is visible for the full duration of the ball flight.
+        let ballPosition = flightActive
+          ? trajectory(e, delta / flightTime)
+          : new THREE.Vector3(originX, 0.4, originZ);
+        if (!flightActive && actor) {
+          ballPosition.set(actor.figure.position.x + 0.75, 0.4, actor.figure.position.z + 0.75);
+        }
+        if (flight(e) && delta > flightTime) {
+          const landed = trajectory(e, 1);
+          if (upcoming && upcoming.second > e.second + flightTime) {
+            const fraction = (t - e.second - flightTime) / (upcoming.second - e.second - flightTime);
+            const [nx, nz] = toPitch(upcoming.x, upcoming.y);
+            ballPosition = new THREE.Vector3(blend(landed.x, nx, fraction), 0.4, blend(landed.z, nz, fraction));
+          } else {
+            ballPosition.copy(landed);
+            ballPosition.y = 0.4;
+          }
         }
         ball.position.copy(ballPosition);
         ball.rotation.x += dt * 3;
         const trailId = flight(e) && delta < 5 ? e.id : "";
-        if (trailId !== lastTrail) {
+        const fraction = flight(e) ? clamp(delta / flightTime, 0, 1) : 0;
+        const fractionBucket = Math.floor(fraction * 36);
+        if (trailId !== lastTrail || (trailId && fractionBucket !== lastFraction)) {
           trail.geometry.dispose();
-          trail.geometry = trailId ?
-            new THREE.BufferGeometry().setFromPoints(Array.from({ length: 25 }, (_, j) => trajectory(e, j / 24))) :
-            new THREE.BufferGeometry();
+          trail.geometry = trailId
+            ? new THREE.BufferGeometry().setFromPoints(
+                Array.from({ length: fractionBucket + 1 }, (_, j) =>
+                  trajectory(e, fractionBucket === 0 ? 0 : fraction * j / fractionBucket))
+              )
+            : new THREE.BufferGeometry();
           trailMat.color.setHex(e.kind === "pass" ? 0x8ce7ff : 0xffde61);
           lastTrail = trailId;
+          lastFraction = fractionBucket;
         }
         trail.visible = Boolean(trailId);
         trailMat.opacity = clamp((5 - delta) / 3, 0, 0.95);
+        if (flight(e) && delta < 5) {
+          const landing = trajectory(e, 1);
+          receiverMarker.position.set(landing.x, 0.12, landing.z);
+          receiverMarker.visible = true;
+        }
       }
       const follow = actors.find(actor => actor.name === props.focusedPlayer);
       if (props.cameraMode === "tactical") {
@@ -235,7 +264,9 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
         target.set(follow.figure.position.x, 1, follow.figure.position.z);
         camera.up.set(0, 1, 0);
       } else {
-        wantedCamera.set(0, 63, 98); target.set(0, 0, 0); camera.up.set(0, 1, 0);
+        const ballX = ball.position.x;
+        wantedCamera.set(clamp(ballX * 0.25, -13, 13), 46, 77);
+        target.set(clamp(ballX * 0.48, -24, 24), 0, 0); camera.up.set(0, 1, 0);
       }
       camera.position.lerp(wantedCamera, clamp(dt * 3.5, 0, 1));
       lookAt.lerp(target, clamp(dt * 3.5, 0, 1));
