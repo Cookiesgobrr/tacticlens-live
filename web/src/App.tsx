@@ -237,8 +237,17 @@ function App() {
   const playerGoals = playerEvents.filter(e => e.kind === "goal").length;
   const milestones = useMemo(() => visible.filter(e =>
     ["goal", "shot", "recovery", "turnover"].includes(e.kind)).slice(-5).reverse(), [visible]);
-  const rolling = useMemo(() => (match?.rolling_patterns ?? []).filter(item => item.at_second <= clock).slice(-6).reverse(), [match, clock]);
   const insight = match?.insights.find(i => clock >= i.at_second);
+  const unifiedFeed = useMemo(() => {
+    const patterns = (match?.rolling_patterns ?? [])
+      .filter(item => item.at_second <= clock)
+      .slice(-6)
+      .map(item => ({ kind: "pattern" as const, at: item.at_second, item }));
+    const featured = (match?.insights ?? [])
+      .filter(item => item.at_second <= clock)
+      .map(item => ({ kind: "featured" as const, at: item.at_second, item }));
+    return [...patterns, ...featured].sort((a, b) => b.at - a.at || (a.kind === "featured" ? -1 : 1));
+  }, [match, clock]);
   const verifiedAI = insight && foundryInsight?.id === insight.id
     && foundryInsight.at_second <= clock ? foundryInsight : null;
   const activeOverlay = useMemo(() => (match?.overlays ?? [])
@@ -254,12 +263,7 @@ function App() {
     { id: "north" as TeamId, name: "Northport FC", short: "NOR", color: "#c6fa65" },
     { id: "south" as TeamId, name: "Southbridge Athletic", short: "SOU", color: "#77aaff" }
   ];
-  const jumpToInsight = () => {
-    if (match?.insights[0]) {
-      setClock(match.insights[0].at_second);
-      setPlaying(false);
-    }
-  };
+
 
   return (
     <div className="app-shell">
@@ -348,37 +352,15 @@ function App() {
               </div>
             </section>
 
-            <section className="panel rolling-panel">
+            <section className="panel intelligence-panel unified-intelligence-panel">
               <div className="panel-head between">
-                <div><div className="section-kicker"><Activity size={15} /> EVENT-DRIVEN INTELLIGENCE</div>
-                <h2>Patterns as play unfolds</h2></div>
+                <div>
+                  <div className="section-kicker"><Sparkles size={15} /> INTELLIGENCE LAYER</div>
+                  <h2>Match intelligence feed</h2>
+                </div>
                 <span className="proof-pill"><ShieldCheck size={14} /> SOURCE LINKED</span>
               </div>
-              <p className="rolling-intro">Analyzed on every new synthetic event, not at fixed match minutes. These rolling alerts use code-based evidence checks; the separate Foundry narrative is shown below.</p>
-              {rolling.length ? <div className="rolling-list">
-                {rolling.map(item => <div key={item.id} className="rolling-card">
-                  <div className="rolling-meta"><span>{formatTime(item.at_second)} · {item.type.replaceAll("_", " ").toUpperCase()}</span><span>RULE-BASED</span></div>
-                  <h3>{item.headline}</h3>
-                  <p>{mode === "broadcast" ? item.broadcast : mode === "analyst" ? item.analyst : item.casual}</p>
-                  <div className="rolling-metric"><strong>{item.metric.previous} → {item.metric.recent}</strong><span>{item.metric.name} · previous vs recent five-minute windows</span></div>
-                  <details className="rolling-evidence"><summary>View {item.evidence_ids.length + item.baseline_ids.length} source events</summary>
-                    <div className="rolling-evidence-events">
-                      {[...item.baseline_ids, ...item.evidence_ids].map(id => {
-                        const event = match?.events.find(event => event.id === id);
-                        return event ? <button key={id} onClick={() => { setClock(event.second); setPlaying(false); }}>{id} · {formatTime(event.second)}</button> : null;
-                      })}
-                    </div>
-                  </details>
-                </div>)}
-              </div> : <div className="rolling-waiting">Watching for meaningful shifts in the synthetic match. Patterns will appear when enough events support a change.</div>}
-            </section>
-
-            <section className="panel intelligence-panel">
-              <div className="panel-head between">
-                <div><div className="section-kicker"><Sparkles size={15} /> INTELLIGENCE LAYER</div>
-                  <h2>What the numbers reveal</h2></div>
-                <span className="proof-pill"><ShieldCheck size={14} /> EVIDENCE BACKED</span>
-              </div>
+              <p className="rolling-intro">Tactical patterns emerge as synthetic events arrive. Verified Foundry narratives join the same timeline when available. Select one audience mode for every insight.</p>
               <div className="mode-tabs" role="group" aria-label="Viewing mode">
                 {modes.map(m => {
                   const Icon = m.icon;
@@ -395,54 +377,88 @@ function App() {
                   foundryFeedStatus === "loading" ? "CONNECTING TO AZURE VERIFIED INSIGHT FEED" :
                   foundryFeedStatus === "unavailable" ? "AZURE FEED UNAVAILABLE · RULE-BASED REPLAY ACTIVE" :
                   "AI RESULT PENDING · RULE-BASED REPLAY ACTIVE"}
-                <small>Cached read only · No AI request from this browser</small>
+                <small>Read-only cached results · No model request from your browser</small>
               </div>
-              {insight ? (
-                <div className="insight">
-                  <div className="insight-top">
-                    <span className="insight-label"><span className="pulse" /> {verifiedAI ? "AZURE-VERIFIED AI · 75'" : "RULE-BASED PATTERN · 75'"}</span>
-                    <span className="insight-id">#{insight.id}</span>
-                  </div>
-                  <h3>{verifiedAI ? (mode === "broadcast" ? verifiedAI.modes.broadcast : verifiedAI.headline) : (mode === "broadcast" ? insight.broadcast : insight.headline)}</h3>
-                  {mode !== "broadcast" && <p>{verifiedAI ? verifiedAI.modes[mode] : (mode === "fan" ? insight.casual : insight.analyst)}</p>}
-                  {verifiedAI && <div className="ai-verification-trace"><ShieldCheck size={13} /> Model generated · Source IDs validated · Evidence gate approved · Independent verifier approved</div>}
-                  <div className="insight-metric">
-                    <div><small>PREVIOUS 10 MIN</small><strong>{insight.metric.previous}</strong></div>
-                    <ArrowRight size={20} />
-                    <div><small>LATEST 10 MIN</small><strong>{insight.metric.recent}</strong></div>
-                    <div className="increase">+{insight.metric.delta} EVENTS</div>
-                  </div>
-                  <button className="evidence-toggle" onClick={() => setShowEvidence(!showEvidence)}
-                    aria-expanded={showEvidence}>
-                    <ShieldCheck size={17} /> {showEvidence ? "Hide" : "Inspect"} Evidence Trail
-                    <ChevronRight size={16} className={showEvidence ? "rotated" : ""} />
-                  </button>
-                  {showEvidence && <div className="evidence">
-                    <p className="evidence-method"><CircleHelp size={15} /> {insight.method}</p>
-                    <div className="evidence-head"><span>SUPPORTING EVENTS</span><span>{allEvidence.length} VERIFIED REFERENCES</span></div>
-                    <div className="evidence-scroll">
-                      {allEvidence.map(e => (
-                        <button key={e.id} className="evidence-row"
-                          onClick={() => { setClock(e.second); setPlaying(false); }}>
-                          <span className="event-id">{e.id}</span>
-                          <span className="evidence-player">{e.player}</span>
-                          <span className={highlighted.has(e.id) ? "window recent-window" : "window"}>
-                            {highlighted.has(e.id) ? "CURRENT" : "BASELINE"}
-                          </span>
-                          <span className="evidence-time">{formatTime(e.second)}</span>
-                        </button>
-                      ))}
+
+              {unifiedFeed.length ? <div className="unified-feed" aria-label="Chronological match intelligence">
+                {unifiedFeed.map(entry => entry.kind === "featured" ? (
+                  <article className="insight unified-feed-item unified-featured" key={"featured-" + entry.item.id}>
+                    <div className="insight-top">
+                      <span className="insight-label"><span className="pulse" />
+                        {verifiedAI ? "AZURE-VERIFIED AI" : "RULE-BASED ANALYSIS"} · {formatTime(entry.at)}
+                      </span>
+                      <span className="insight-id">#{entry.item.id}</span>
                     </div>
-                  </div>}
-                </div>
-              ) : <div className="insight-empty">
+                    <h3>{verifiedAI ? (mode === "broadcast" ? verifiedAI.modes.broadcast : verifiedAI.headline) :
+                      (mode === "broadcast" ? entry.item.broadcast : entry.item.headline)}</h3>
+                    {mode !== "broadcast" && <p>{verifiedAI ? verifiedAI.modes[mode] :
+                      (mode === "fan" ? entry.item.casual : entry.item.analyst)}</p>}
+                    {verifiedAI && <div className="ai-verification-trace">
+                      <ShieldCheck size={13} /> Model generated · Source IDs validated · Evidence gate approved · Independent verifier approved
+                    </div>}
+                    <div className="insight-metric">
+                      <div><small>PREVIOUS 10 MIN</small><strong>{entry.item.metric.previous}</strong></div>
+                      <ArrowRight size={20} />
+                      <div><small>LATEST 10 MIN</small><strong>{entry.item.metric.recent}</strong></div>
+                      <div className="increase">+{entry.item.metric.delta} EVENTS</div>
+                    </div>
+                    <button className="evidence-toggle" onClick={() => setShowEvidence(!showEvidence)}
+                      aria-expanded={showEvidence}>
+                      <ShieldCheck size={17} /> {showEvidence ? "Hide" : "Inspect"} Evidence Trail
+                      <ChevronRight size={16} className={showEvidence ? "rotated" : ""} />
+                    </button>
+                    {showEvidence && <div className="evidence">
+                      <p className="evidence-method"><CircleHelp size={15} /> {entry.item.method}</p>
+                      <div className="evidence-head">
+                        <span>SUPPORTING EVENTS</span><span>{allEvidence.length} VERIFIED REFERENCES</span>
+                      </div>
+                      <div className="evidence-scroll">
+                        {allEvidence.map(e => (
+                          <button key={e.id} className="evidence-row"
+                            onClick={() => { setClock(e.second); setPlaying(false); }}>
+                            <span className="event-id">{e.id}</span>
+                            <span className="evidence-player">{e.player}</span>
+                            <span className={highlighted.has(e.id) ? "window recent-window" : "window"}>
+                              {highlighted.has(e.id) ? "CURRENT" : "BASELINE"}
+                            </span>
+                            <span className="evidence-time">{formatTime(e.second)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>}
+                  </article>
+                ) : (
+                  <article className="rolling-card unified-feed-item" key={"pattern-" + entry.item.id}>
+                    <div className="rolling-meta">
+                      <span>{formatTime(entry.at)} · {entry.item.type.replaceAll("_", " ").toUpperCase()}</span>
+                      <span>RULE-BASED · EVENT DETECTED</span>
+                    </div>
+                    <h3>{entry.item.headline}</h3>
+                    <p>{mode === "broadcast" ? entry.item.broadcast :
+                      mode === "analyst" ? entry.item.analyst : entry.item.casual}</p>
+                    <div className="rolling-metric">
+                      <strong>{entry.item.metric.previous} → {entry.item.metric.recent}</strong>
+                      <span>{entry.item.metric.name} · previous vs recent five-minute windows</span>
+                    </div>
+                    <details className="rolling-evidence">
+                      <summary>Inspect {entry.item.evidence_ids.length + entry.item.baseline_ids.length} source events</summary>
+                      <p className="rolling-method">{entry.item.method}</p>
+                      <div className="rolling-evidence-events">
+                        {[...entry.item.baseline_ids, ...entry.item.evidence_ids].map(id => {
+                          const event = match?.events.find(event => event.id === id);
+                          return event ? <button key={id} onClick={() => { setClock(event.second); setPlaying(false); }}>
+                            {id} · {formatTime(event.second)}
+                          </button> : null;
+                        })}
+                      </div>
+                    </details>
+                  </article>
+                ))}
+              </div> : <div className="insight-empty">
                 <div className="insight-empty-icon"><Layers3 size={24} /></div>
                 <h3>Intelligence is building.</h3>
-                <p>As the match unfolds, the detection engine checks 10-minute windows for
-                  meaningful changes. An evidence-backed shift appears at 75:00.</p>
-                <button className="secondary-cta" onClick={jumpToInsight}>
-                  Jump to insight <ArrowRight size={16} />
-                </button>
+                <p>The engine is reviewing incoming synthetic match events.
+                  Patterns will appear as soon as the evidence supports them.</p>
               </div>}
             </section>
           </div>
