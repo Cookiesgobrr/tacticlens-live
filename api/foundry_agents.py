@@ -85,7 +85,7 @@ class FoundryAgentBackend:
                 "or FOUNDRY_PROJECT_ENDPOINT."
             )
         from agent_framework import Agent
-        from azure.identity import AzureCliCredential
+        from azure.identity import DefaultAzureCredential
 
         if resource_url:
             # Microsoft Agent Framework uses the Responses client at a
@@ -103,7 +103,7 @@ class FoundryAgentBackend:
             client = OpenAIChatClient(
                 model=model,
                 base_url=resource_url.rstrip("/"),
-                credential=AzureCliCredential(),
+                credential=DefaultAzureCredential(),
             )
         else:
             # Foundry project endpoints remain supported separately.
@@ -112,7 +112,7 @@ class FoundryAgentBackend:
             client = FoundryChatClient(
                 project_endpoint=project_endpoint,
                 model=model,
-                credential=AzureCliCredential(),
+                credential=DefaultAzureCredential(),
             )
         self.agents = {
             "insight": Agent(
