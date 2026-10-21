@@ -8,7 +8,9 @@ export interface ReplayEvent {
   x: number; y: number; description: string; end_x?: number; end_y?: number;
   pass_completed?: boolean; pass_distance_m?: number;
 }
+export type MovementFeed = { sample_seconds: number; players: { id: string; name: string; team: ReplayTeam; max_speed_mps: number }[]; frames: number[][][]; summary: { player_id: string; distance_m: number; peak_speed_mps: number; running_seconds: number }[]; event_alignment: Record<string,{estimated_position_error_m:number}>; measurement_status: string };
 type Props = {
+  movement?: MovementFeed;
   events: ReplayEvent[]; clock: number; cameraMode: ReplayCamera;
   focusedPlayer: string; favoriteTeam: ReplayTeam | "all";
   onSeek: (second: number) => void;
@@ -103,7 +105,7 @@ function timeLabel(second: number) {
   return String(Math.floor(second / 60)).padStart(2, "0") + ":" +
     String(second % 60).padStart(2, "0");
 }
-export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
+export default function Replay3D({ events, movement, clock, cameraMode, focusedPlayer,
   favoriteTeam, onSeek }: Props) {
   const node = useRef<HTMLDivElement>(null);
   const current = useRef({ clock, cameraMode, focusedPlayer, favoriteTeam });
@@ -162,7 +164,7 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
         new THREE.MeshStandardMaterial({ color: 0xe1f0ea }));
       goal.position.set(x, 1.25, 0); scene.add(goal);
     }
-    const unique = Array.from(new Set(events.map(e => e.team + "|" + e.player)));
+    const unique = movement?.players.map(p => p.team + "|" + p.name) ?? Array.from(new Set(events.map(e => e.team + "|" + e.player)));
     const actors: Actor[] = [];
     for (const key of unique) {
       const [team, name] = key.split("|") as [ReplayTeam, string];
@@ -188,16 +190,25 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
       lastFrame = now;
       const props = current.current;
       const t = props.clock;
-      for (const actor of actors) {
-        const [x, z] = actorLocation(actor, t);
+      for (const [actorIndex, actor] of actors.entries()) {
+        const step = t / (movement?.sample_seconds ?? 1);
+        const firstIndex = clamp(Math.floor(step), 0, (movement?.frames.length ?? 1)-1);
+        const secondIndex = clamp(firstIndex + 1, 0, (movement?.frames.length ?? 1)-1);
+        const sampleA = movement?.frames[firstIndex]?.[actorIndex];
+        const sampleB = movement?.frames[secondIndex]?.[actorIndex];
+        const fraction = step - Math.floor(step);
+        const [x, z] = sampleA && sampleB
+          ? [blend(sampleA[0], sampleB[0], fraction), blend(sampleA[1], sampleB[1], fraction)]
+          : actorLocation(actor, t);
         const dx = x - actor.figure.position.x, dz = z - actor.figure.position.z;
         actor.figure.position.set(x, 0, z);
         if (Math.abs(dx) + Math.abs(dz) > 0.02) actor.figure.rotation.y = Math.atan2(dx, dz);
-        const phase = Math.sin(t * 2.9 + actor.baseX);
-        actor.legs[0].rotation.x = phase * 0.28;
-        actor.legs[1].rotation.x = -phase * 0.28;
-        actor.arms[0].rotation.x = -phase * 0.17;
-        actor.arms[1].rotation.x = phase * 0.17;
+        const speed = sampleA ? sampleA[2] : 0;
+        const stride = speed > 1 ? Math.sin(t * (5.4 + speed * 1.4) + actor.baseX) * Math.min(0.65, speed * 0.085) : 0;
+        actor.legs[0].rotation.x = stride;
+        actor.legs[1].rotation.x = -stride;
+        actor.arms[0].rotation.x = -stride * 0.65;
+        actor.arms[1].rotation.x = stride * 0.65;
         const selected = props.focusedPlayer === actor.name ||
           (!props.focusedPlayer && props.favoriteTeam !== "all" && props.favoriteTeam === actor.team);
         actor.halo.visible = selected;
@@ -294,7 +305,7 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [events]);
+  }, [events, movement]);
 
   return <div className="replay3d-wrapper">
     {unavailable ? <div className="replay3d-error">3D WebGL is unavailable. Switch to the 2D view.</div> :
@@ -309,6 +320,6 @@ export default function Replay3D({ events, clock, cameraMode, focusedPlayer,
         <small>{e.player}</small>
       </button>)}
     </div>
-    <div className="replay3d-disclaimer">Player movement between synthetic events is approximated, not measured tracking data.</div>
+    <div className="replay3d-disclaimer">All-player simulated motion · 1 Hz speed logs · capped at 8.6 m/s · NOT measured tracking data.</div>
   </div>;
 }
