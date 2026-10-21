@@ -300,7 +300,15 @@ export default function Replay3D({ events, movement, playback, clock, cameraMode
           receiverMarker.visible = true;
         }
       }
-      const follow = actors.find(actor => actor.name === props.focusedPlayer);
+      if (!e && playback?.ball_frames.length) {
+        const sample = t / playback.sample_seconds;
+        const i = clamp(Math.floor(sample), 0, playback.ball_frames.length - 1);
+        const j = Math.min(i + 1, playback.ball_frames.length - 1);
+        const a = playback.ball_frames[i], b = playback.ball_frames[j];
+        const k = sample - Math.floor(sample);
+        ball.position.set(blend(a[0], b[0], k), blend(a[2], b[2], k), blend(a[1], b[1], k));
+      }
+            const follow = actors.find(actor => actor.name === props.focusedPlayer);
       const projectedTag = nameTag.current;
       const frameIndex = Math.max(0, Math.floor(t / (movement?.sample_seconds ?? 1)));
       const followIndex = follow ? actors.indexOf(follow) : -1;
@@ -321,8 +329,12 @@ export default function Replay3D({ events, movement, playback, clock, cameraMode
       if (props.cameraMode === "tactical") {
         wantedCamera.set(0, 114, 0.01); target.set(0, 0, 0); camera.up.set(0, 0, -1);
       } else if (props.cameraMode === "player" && follow) {
-        wantedCamera.set(follow.figure.position.x + 12, 22, follow.figure.position.z + 30);
-        target.set(follow.figure.position.x, 1, follow.figure.position.z);
+        // Track both the player and ball with enough height to retain context.
+        const focusX = follow.figure.position.x * 0.7 + ball.position.x * 0.3;
+        const focusZ = follow.figure.position.z * 0.7 + ball.position.z * 0.3;
+        wantedCamera.set(clamp(focusX + 13, -36, 36), 38,
+                         clamp(focusZ + 54, 32, 76));
+        target.set(focusX, 1, focusZ);
         camera.up.set(0, 1, 0);
       } else {
         const ballX = ball.position.x;
@@ -396,6 +408,6 @@ export default function Replay3D({ events, movement, playback, clock, cameraMode
       </button>)}
       {ticker.length === 0 && <div className="replay3d-no-events">No events from this focus yet</div>}
     </div>
-    <div className="replay3d-disclaimer">Synthetic possession-linked ball and running · Inferred handoffs are not observed match tracking.</div>
+    <div className="replay3d-disclaimer">Synthetic reconstructed football · Opening passes and handoffs inferred, not recorded events.</div>
   </div>;
 }
