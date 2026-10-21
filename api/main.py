@@ -6,6 +6,7 @@ from api.analytics import detect_insights, match_stats
 from api.overlays import build_overlay_cues, cues_at
 from api.players import player_stats
 from api.recaps import build_match_recaps
+from api.rolling_patterns import detect_rolling_patterns
 
 app = FastAPI(title="TacticLens Live", version="0.1.0")
 MATCH = build_match()
@@ -20,7 +21,7 @@ def health():
 
 @app.get("/api/match")
 def get_match():
-    return {**MATCH, "insights": INSIGHTS}
+    return {**MATCH, "insights": INSIGHTS, "rolling_patterns": detect_rolling_patterns(MATCH["events"])}
 
 
 @app.get("/api/stats")
@@ -51,3 +52,10 @@ def get_player_stats(player_name: str, at: int = 5400):
 def get_recaps():
     """Evidence-backed deterministic half-time and full-time recaps."""
     return {"match_id": MATCH["match_id"], "recaps": build_match_recaps(MATCH)}
+
+
+@app.get("/api/patterns")
+def get_patterns(at: int = 5400):
+    at = max(0, min(at, MATCH["duration_seconds"]))
+    return {"match_id": MATCH["match_id"], "at_second": at,
+            "patterns": detect_rolling_patterns([e for e in MATCH["events"] if e["second"] <= at], at)}
