@@ -3,10 +3,12 @@ from fastapi import FastAPI
 from api.agent_pipeline import run_pipeline
 from api.simulator import build_match
 from api.analytics import detect_insights, match_stats
+from api.overlays import build_overlay_cues, cues_at
 
 app = FastAPI(title="TacticLens Live", version="0.1.0")
 MATCH = build_match()
 INSIGHTS = detect_insights(MATCH["events"])
+OVERLAYS = build_overlay_cues(MATCH, INSIGHTS)
 
 
 @app.get("/api/health")
@@ -29,3 +31,9 @@ def get_stats(at: int = 5400):
 async def agent_demo(at: int = 4500):
     """Free deterministic agent-style workflow; NOT generative AI."""
     return await run_pipeline(MATCH, at_second=at)
+
+
+@app.get("/api/overlays")
+def get_overlays(at: int | None = None):
+    """Broadcast-ready synthetic cues, with optional match-clock filtering."""
+    return {"match_id": MATCH["match_id"], "cues": OVERLAYS if at is None else cues_at(OVERLAYS, max(0, min(at, MATCH["duration_seconds"])))}
