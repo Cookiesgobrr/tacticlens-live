@@ -9,7 +9,9 @@ export interface ReplayEvent {
   pass_completed?: boolean; pass_distance_m?: number;
 }
 export type MovementFeed = { sample_seconds: number; players: { id: string; name: string; team: ReplayTeam; max_speed_mps: number }[]; frames: number[][][]; summary: { player_id: string; distance_m: number; peak_speed_mps: number; running_seconds: number }[]; event_alignment: Record<string,{estimated_position_error_m:number}>; measurement_status: string };
+export type BallPlayback = { sample_seconds: number; ball_frames: number[][]; measurement_status: string };
 type Props = {
+  playback?: BallPlayback;
   movement?: MovementFeed;
   events: ReplayEvent[]; clock: number; cameraMode: ReplayCamera;
   focusedPlayer: string; favoriteTeam: ReplayTeam | "all";
@@ -106,7 +108,7 @@ function timeLabel(second: number) {
   return String(Math.floor(second / 60)).padStart(2, "0") + ":" +
     String(second % 60).padStart(2, "0");
 }
-export default function Replay3D({ events, movement, clock, cameraMode, focusedPlayer,
+export default function Replay3D({ events, movement, playback, clock, cameraMode, focusedPlayer,
   favoriteTeam, viewerLens = "fan", onSeek }: Props) {
   const node = useRef<HTMLDivElement>(null);
   const nameTag = useRef<HTMLDivElement>(null);
@@ -265,6 +267,14 @@ export default function Replay3D({ events, movement, clock, cameraMode, focusedP
             ballPosition.y = 0.4;
           }
         }
+        if (playback?.ball_frames.length) {
+          const sample = t / playback.sample_seconds;
+          const i = clamp(Math.floor(sample), 0, playback.ball_frames.length - 1);
+          const j = Math.min(i + 1, playback.ball_frames.length - 1);
+          const a = playback.ball_frames[i], b = playback.ball_frames[j];
+          const k = sample - Math.floor(sample);
+          ballPosition.set(blend(a[0], b[0], k), blend(a[2], b[2], k), blend(a[1], b[1], k));
+        }
         ball.position.copy(ballPosition);
         ball.rotation.x += dt * 3;
         const trailId = flight(e) && delta < 5 ? e.id : "";
@@ -360,7 +370,7 @@ export default function Replay3D({ events, movement, clock, cameraMode, focusedP
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [events, movement]);
+  }, [events, movement, playback]);
 
   return <div className="replay3d-wrapper">
     {unavailable ? <div className="replay3d-error">3D WebGL is unavailable. Switch to the 2D view.</div> :
@@ -386,6 +396,6 @@ export default function Replay3D({ events, movement, clock, cameraMode, focusedP
       </button>)}
       {ticker.length === 0 && <div className="replay3d-no-events">No events from this focus yet</div>}
     </div>
-    <div className="replay3d-disclaimer">All-player simulated motion · 1 Hz speed logs · capped at 8.6 m/s · NOT measured tracking data.</div>
+    <div className="replay3d-disclaimer">Synthetic possession-linked ball and running · Inferred handoffs are not observed match tracking.</div>
   </div>;
 }
