@@ -218,6 +218,11 @@ export default function PerspectiveStudio({
           aria-pressed={selectedProfile === option.key}
           onClick={() => {
             if (moment) onActivate(option.key, moment, targetPlayer);
+            else onActivate(option.key, {
+              id: "MATCH-START", kind: "pattern", at_second: clock,
+              team: favoriteTeam === "all" ? "north" : favoriteTeam,
+              label: "Current match view", evidence_ids: []
+            }, favoritePlayer || events[0]?.player || "");
           }}>
           <Icon size={14} /> {option.label}
         </button>;
@@ -250,7 +255,7 @@ export default function PerspectiveStudio({
           onClick={() => onSeekEvidence(e.second)}>{e.id} <span>{clockText(e.second)}</span></button>)}</div>
       </details>
     </div> : <div className="lens-empty">
-      <span>Insights will appear as the match unfolds.</span>
+      <span>View changed. Match insights appear as play unfolds.</span>
       <small>The selected view uses only events visible at your replay time.</small>
     </div>}
     {feature && clock < feature.at_second && <button className="lens-demo-jump" onClick={() =>
