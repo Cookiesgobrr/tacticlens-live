@@ -1,0 +1,4 @@
+# Azure Functions runtime installs this from the repository root.
+-r api/requirements-foundry.txt
+azure-functions>=1.21
+azure-storage-blob>=12.22
