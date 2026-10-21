@@ -13,6 +13,7 @@ from api.simulator import build_match
 from api.analytics import detect_insights
 from api.overlays import build_overlay_cues
 from api.recaps import build_match_recaps
+from api.rolling_patterns import detect_rolling_patterns
 
 
 DEFAULT_OUTPUT = Path("web/public/demo-match.json")
@@ -21,7 +22,7 @@ DEFAULT_OUTPUT = Path("web/public/demo-match.json")
 def create_snapshot() -> dict:
     match = build_match()
     insights = detect_insights(match["events"])
-    return {**match, "insights": insights, "overlays": build_overlay_cues(match, insights), "recaps": build_match_recaps(match)}
+    return {**match, "insights": insights, "overlays": build_overlay_cues(match, insights), "recaps": build_match_recaps(match), "rolling_patterns": detect_rolling_patterns(match["events"])}
 
 
 def export_snapshot(output: Path = DEFAULT_OUTPUT) -> Path:
