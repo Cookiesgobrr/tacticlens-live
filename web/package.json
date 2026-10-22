@@ -10,7 +10,9 @@
     "test:match": "node --experimental-strip-types scripts/check-match.mjs",
     "test:browser": "node scripts/check-browser.mjs",
     "test:analysis": "node --experimental-strip-types scripts/check-analysis.mjs",
-    "test:evidence": "node --experimental-strip-types scripts/check-evidence.mjs"
+    "test:evidence": "node --experimental-strip-types scripts/check-evidence.mjs",
+    "test:intelligence": "node --experimental-strip-types scripts/check-intelligence.mjs",
+    "test:production": "node --experimental-strip-types scripts/check-production.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

@@ -32,7 +32,7 @@ try{
   mkdirSync(new URL('../test-results/',import.meta.url),{recursive:true});
   const expected=await page.evaluate(async()=>{
     const {generateMatch,eventsUntil}=await import('/src/footballEngine.ts');
-    const m=generateMatch();const ev=eventsUntil(m,2700);
+    const m=generateMatch(82);const ev=eventsUntil(m,2700);
     return {shots:ev.filter(e=>e.type==='shot').length,xg:[0,1].map(team=>ev.filter(e=>e.type==='shot'&&e.team===team).reduce((a,e)=>a+e.shotXg,0).toFixed(2)),firstShot:m.events.find(e=>e.type==='shot')};
   });
   assert.deepEqual(await page.locator('.new-xg-totals b').allTextContents(),expected.xg.map(x=>`${x} xG`));
@@ -74,7 +74,7 @@ try{
   const canvas=page.locator('.new-pitch3d canvas');await canvas.waitFor();
   await page.waitForFunction(()=>document.querySelector('.new-pitch3d canvas')?.dataset.renderedFrame);
   const rendered=JSON.parse(await canvas.getAttribute('data-rendered-frame'));
-  const original=await page.evaluate(async()=>{const {generateMatch,atTime}=await import('/src/footballEngine.ts');return atTime(generateMatch(),2700)});
+  const original=await page.evaluate(async()=>{const {generateMatch,atTime}=await import('/src/footballEngine.ts');return atTime(generateMatch(82),2700)});
   assert.equal(rendered.people.length,22);
   for(let i=0;i<22;i++){assert.ok(Math.abs(rendered.people[i].x-original.people[i].x)<1e-5);assert.ok(Math.abs(rendered.people[i].y-original.people[i].y)<1e-5);}
   assert.ok(Math.abs(rendered.ball.x-original.ball.x)<1e-5&&Math.abs(rendered.ball.y-original.ball.y)<1e-5&&Math.abs(rendered.ball.z-original.ball.z)<1e-5);
@@ -88,6 +88,33 @@ try{
   await canvas.waitFor();await page.waitForTimeout(200);
   await page.getByRole('button',{name:'2D pitch',exact:true}).click();
   await pitch.waitFor();assert.equal(+(await timeline.inputValue()),2700);
+  await timeline.fill('4680.25');
+  const aiMoment=page.getByTestId('foundry-moment');await aiMoment.waitFor();
+  assert.equal(+(await aiMoment.getAttribute('data-moment-time')),4680.25);
+  assert.ok((await aiMoment.innerText()).includes('Evidence at 78:00'),'Football minutes must not wrap after an hour');
+  const overlayBounds=await pitch.locator('[data-stat-label] rect,[data-shot-probability] rect').evaluateAll(nodes=>nodes.map(n=>{const b=n.getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height}}));
+  for(let i=0;i<overlayBounds.length;i++)for(const b of overlayBounds.slice(i+1)){const a=overlayBounds[i];assert.ok(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y,'Shot probability and player labels must not overlap');}
+  assert.ok((await page.locator('.new-score').innerText()).includes('3 : 2'));
+  await page.getByText('Agent trace, all evidence & broadcast exports',{exact:true}).click();
+  assert.equal(await page.locator('.new-ai-stage').count(),3);
+  const aiDownload=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export AI moment JSON',exact:true}).click();
+  const aiExport=JSON.parse(readFileSync(await (await aiDownload).path(),'utf8'));
+  assert.equal(aiExport.provider,'microsoft-foundry');assert.equal(aiExport.card.moment.id,'SIM-82@4680.25');
+  assert.equal(aiExport.asOfSecond,4680.25);assert.equal(aiExport.trace.length,3);
+  await timeline.fill('4685');
+  const aiCaptions=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export AI broadcast VTT',exact:true}).click();
+  assert.ok(readFileSync(await (await aiCaptions).path(),'utf8').includes('01:18:00.250 --> 01:18:05.000'));
+  await page.getByRole('button',{name:'Club supporter',exact:true}).click();
+  await page.getByLabel('Follow team',{exact:true}).selectOption('1');
+  assert.ok((await aiMoment.innerText()).includes('Southbridge supporters'));
+  await timeline.fill('4680');
+  assert.equal(+(await aiMoment.getAttribute('data-moment-time')),4585.25,'No winning-goal AI before the winning event');
+  await page.getByRole('button',{name:'Fan',exact:true}).click();
+  await page.getByLabel('Follow team',{exact:true}).selectOption('2');
+  await timeline.fill('4680.25');
+  await page.screenshot({path:new URL('../test-results/foundry-evidence.png',import.meta.url).pathname,fullPage:true});
   await page.setViewportSize({width:390,height:844});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No horizontal overflow on mobile');
   assert.ok(await page.locator('.new-mobile-stats').isVisible());
@@ -102,6 +129,15 @@ try{
   await timeline.fill('5400');
   const expectedScore=await page.evaluate(async()=>{const {generateMatch}=await import('/src/footballEngine.ts');const m=generateMatch(2027);return [0,1].map(team=>m.events.filter(e=>e.type==='goal'&&e.team===team).length).join(' : ')});
   assert.ok((await page.locator('.new-score').innerText()).includes(expectedScore));
+  assert.equal(await page.getByTestId('foundry-moment').count(),0,'Another seed must not reuse SIM-82 AI');
+  const tampered=await browser.newPage();
+  const badCache=JSON.parse(readFileSync(new URL('../public/data/foundry-sim82.json',import.meta.url),'utf8'));
+  badCache.cards[0].moment.checks.score[0]=99;
+  await tampered.route('**/data/foundry-sim82.json',route=>route.fulfill({json:badCache}));
+  await tampered.goto('http://127.0.0.1:5179');
+  await tampered.getByRole('slider',{name:'Match timeline'}).fill('5400');
+  await tampered.getByText('Foundry cache unavailable or rejected; showing deterministic insights.',{exact:true}).waitFor();
+  assert.equal(await tampered.getByTestId('foundry-moment').count(),0);await tampered.close();
   const fallback=await browser.newPage();
   await fallback.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){if(type==='webgl'||type==='webgl2')return null;return original.call(this,type,...args)}});
   await fallback.goto('http://127.0.0.1:5179');await fallback.locator('.new-pitch').waitFor();
@@ -110,5 +146,5 @@ try{
   assert.ok(await fallback.locator('.new-pitch').isVisible());
   await fallback.close();
   assert.deepEqual(errors,[]);
-  console.log('Browser gates passed: 22 actors, 1x/seek/zoom/restart, no future xG, labels, seeded score, 3D frame parity/cameras/quality, mobile and WebGL fallback.');
+  console.log('Browser gates passed: 22 actors, 1x/seek/zoom/restart, no future xG, labels, seeded score, 3D frame parity/cameras/quality, mobile, WebGL fallback, genuine Foundry cache, audience scope, AI JSON/VTT, no future winner, and tampered-cache rejection.');
 }finally{await browser?.close();server.kill();}

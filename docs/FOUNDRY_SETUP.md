@@ -1,3 +1,7 @@
+# Archived Foundry setup
+
+For the completed new-match integration, use [FOUNDRY_11V11.md](FOUNDRY_11V11.md). The commands below describe the older dataset and must not be used to generate SIM-82 evidence.
+
 # TacticLens Live: Microsoft Foundry integration
 
 The existing public GitHub Pages dashboard remains a **static synthetic preview** and does **not** call Foundry. The existing `/api/agent-demo` endpoint remains deterministic.
@@ -34,3 +38,4 @@ If you use a Foundry **project** endpoint instead, set only `FOUNDRY_PROJECT_END
 Use `python -m pytest api/tests -q` to run offline tests with no API calls. The cloud integration has **not** been proven to work end-to-end until the explicit CLI test succeeds. If that test returns `status: error`, do not assume success; investigate Azure permissions and SDK compatibility.
 
 Microsoft Agent Framework guidance: https://learn.microsoft.com/en-us/agent-framework/agents/providers/openai
+
