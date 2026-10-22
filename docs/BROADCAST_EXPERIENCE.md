@@ -26,7 +26,7 @@ Outside a supported time/player/seed, the UI explicitly labels its deterministic
 
 `generateMatch(seed)` keeps the classic engine and its published calibration. `generateMatch(seed, {version: 'formations-v2'})` selects real 4-3-3, 4-2-3-1, 4-4-2, 3-5-2 or 4-1-4-1 shapes deterministically. Their nominal lines, width, defensive compression and DM/AM depth affect movement, passing geometry and nearest-player pressing. Goalkeepers remain a distinct role. The UI uses v2 for other seeds and shows optional actual kickoff diagrams.
 
-**Seed 82 always uses classic-v1**, including when v2 is requested. Its match ID stays `SIM-82`. V2 matches use `SIM-<seed>-F2` to avoid confusing their evidence with classic outcomes; deterministic JSON exports include the engine version and formations. The full seed 82 motion/ownership/speed/distance/event SHA256 is guarded by `check-camera.mjs`:
+**Seed 82 always uses classic-v1**, including when v2 is requested. Its match ID stays `SIM-82`. V2 matches use `SIM-<seed>-F2` to avoid confusing their evidence with classic outcomes; formation JSON exports use schema v2 with the engine version and formations. Classic schema v1 and its original provenance shape remain compatible. The full seed 82 motion/ownership/speed/distance/event SHA256 is guarded by `check-camera.mjs`:
 
 `c66c53cffd774f4a5598da9fb3262aaee24aa538ba3d726cf2e0e0d6451026c0`
 

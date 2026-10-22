@@ -159,7 +159,7 @@ try{
   assert.equal(await page.getByRole('img',{name:'Northport kickoff formation 4-4-2',exact:true}).count(),1);
   const f2Download=page.waitForEvent('download');await page.getByRole('button',{name:'Export evidence JSON',exact:true}).click();
   const f2Report=JSON.parse(readFileSync(await (await f2Download).path(),'utf8'));
-  assert.equal(f2Report.matchId,'SIM-2027-F2');assert.equal(f2Report.provenance.engineVersion,'formations-v2');
+  assert.equal(f2Report.schemaVersion,'tacticlens.evidence.v2');assert.equal(f2Report.matchId,'SIM-2027-F2');assert.equal(f2Report.provenance.engineVersion,'formations-v2');
   assert.deepEqual(f2Report.provenance.formations,['4-4-2','4-3-3']);
   await page.getByRole('spinbutton',{name:'Reproducible match seed'}).fill('82');await page.getByRole('button',{name:'Load',exact:true}).click();
   await timeline.fill('0');

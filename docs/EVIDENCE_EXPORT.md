@@ -32,4 +32,4 @@ Inside a genuine Foundry card, expand “Agent trace, all evidence & broadcast e
 
 ### Versioned formation evidence
 
-Deterministic JSON provenance now includes `engineVersion` and both `formations`. Classic `generateMatch(seed)` remains reproducible. UI seeds other than 82 use `formations-v2` and `SIM-<seed>-F2` IDs, preventing confusion with classic outcomes. Seed 82 remains `SIM-82`; its event stream and genuine Foundry cache are unchanged. Highlight replay is a timed pre-roll; source-evidence buttons remain exact paused seeks.
+Formation reports use `tacticlens.evidence.v2` and add `engineVersion` plus both `formations` to provenance. Classic reports retain the original `tacticlens.evidence.v1` shape and audit compatibility. Classic `generateMatch(seed)` remains reproducible. UI seeds other than 82 use `formations-v2` and `SIM-<seed>-F2` IDs, preventing confusion with classic outcomes. Seed 82 remains `SIM-82`; its event stream and genuine Foundry cache are unchanged. Highlight replay is a timed pre-roll; source-evidence buttons remain exact paused seeks.

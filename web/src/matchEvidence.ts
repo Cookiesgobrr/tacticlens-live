@@ -28,8 +28,8 @@ export function buildEvidenceReport(match:Timeline,asOfSecond:number,view:Export
       evidenceIds:e.sourceId?[e.sourceId,e.id]:[e.id]}];
   });
   return {
-    schemaVersion:'tacticlens.evidence.v1',matchId:match.matchId,seed:match.seed,asOfSecond,
-    provenance:{simulation:match.simulation,engineVersion:match.engineVersion,formations:match.formations,narrativeProvider:'rule-based',
+    schemaVersion:match.engineVersion==='formations-v2'?'tacticlens.evidence.v2':'tacticlens.evidence.v1',matchId:match.matchId,seed:match.seed,asOfSecond,
+    provenance:{simulation:match.simulation,...(match.engineVersion==='formations-v2'?{engineVersion:match.engineVersion,formations:match.formations}:{}),narrativeProvider:'rule-based',
       probabilityModel:'simplified-synthetic-xg',realWorldCalibrated:false,foundryEvidence:false},
     view:{...view},totals:pulse(events),
     recap:{headline:story.headline,text:story.text,evidenceIds:story.evidence.map(e=>e.id)},
