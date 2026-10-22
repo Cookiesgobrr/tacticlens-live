@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { generateMatch, atTime, eventsUntil, validateMatch, type Side, type EventLog } from "./footballEngine";
 import {matchStory, placeLabels, shotExplanation, pulse, type Lens} from "./matchAnalysis";
 import { Pause, Play, RotateCcw, FastForward, ShieldCheck, Crosshair, Activity } from "lucide-react";
+const MatchPitch3D=lazy(()=>import("./MatchPitch3D"));
 const mtime=(v:number)=>String(Math.floor(v/60)).padStart(2,"0")+":"+String(Math.floor(v%60)).padStart(2,"0");
 type View="fan"|"analyst"|"player";
 export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
@@ -10,6 +11,11 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
   const [speed,setSpeed]=useState(1);
+  const [renderer,setRenderer]=useState<"2d"|"3d">("2d");
+  const [camera,setCamera]=useState<"broadcast"|"tactical"|"player">("broadcast");
+  const [quality,setQuality]=useState<"low"|"medium">("low");
+  const [flipped,setFlipped]=useState(false);
+  const [graphicsError,setGraphicsError]=useState(false);
   const [zoom,setZoom]=useState(1);
   const [mode,setMode]=useState<View>("fan");
   const [selected,setSelected]=useState(9);
@@ -98,10 +104,13 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
           <div className="new-view-controls">
             <label className="new-stats-toggle"><input type="checkbox" checked={showPlayerStats}
               onChange={e=>setShowPlayerStats(e.target.checked)} aria-label="Player stats"/> Nearby player stats</label>
-          <select className="new-zoom" aria-label="Pitch zoom" value={zoom} onChange={e=>setZoom(+e.target.value)}><option value="1">Full pitch</option><option value="1.5">Focus 1.5×</option><option value="2">Focus 2×</option></select>
-          <div className="new-mode"><button className={mode==="fan"?"chosen":""} onClick={()=>setMode("fan")}>Match</button><button className={mode==="analyst"?"chosen":""} onClick={()=>setMode("analyst")}>Tactical</button><button className={mode==="player"?"chosen":""} onClick={()=>setMode("player")}>Player focus</button></div></div>
+          <select className="new-zoom" disabled={renderer==="3d"} aria-label="Pitch zoom" value={zoom} onChange={e=>setZoom(+e.target.value)}><option value="1">Full pitch</option><option value="1.5">Focus 1.5×</option><option value="2">Focus 2×</option></select>
+          <div className="new-mode"><button className={mode==="fan"?"chosen":""} onClick={()=>{setMode("fan");setCamera("broadcast")}}>Match</button><button className={mode==="analyst"?"chosen":""} onClick={()=>{setMode("analyst");setCamera("tactical")}}>Tactical</button><button className={mode==="player"?"chosen":""} onClick={()=>{setMode("player");setCamera("player")}}>Player focus</button></div></div>
         </div>
+        <div className="new-render-controls"><div className="new-mode" aria-label="Pitch renderer"><button aria-pressed={renderer==="2d"} className={renderer==="2d"?"chosen":""} onClick={()=>setRenderer("2d")}>2D pitch</button><button aria-pressed={renderer==="3d"} className={renderer==="3d"?"chosen":""} onClick={()=>{setGraphicsError(false);setRenderer("3d")}}>3D studio</button></div>{renderer==="3d"&&<><select aria-label="3D camera" value={camera} onChange={e=>setCamera(e.target.value as typeof camera)}><option value="broadcast">Broadcast camera</option><option value="tactical">Tactical camera</option><option value="player">Player camera</option></select><select aria-label="Graphics quality" value={quality} onChange={e=>setQuality(e.target.value as typeof quality)}><option value="low">Low graphics</option><option value="medium">Medium graphics</option></select><button className="new-flip" onClick={()=>setFlipped(v=>!v)}>Flip pitch</button></>}</div>
+        {graphicsError&&<p className="new-graphics-message" role="status">3D graphics are unavailable on this device. The 2D replay is ready.</p>}
         <div className="new-pitchwrap">
+          {renderer==="3d"?<Suspense fallback={<div className="new-pitch new-loading">Loading 3D studio…</div>}><MatchPitch3D match={match} frame={current} time={time} selected={selected} event={last} camera={camera} quality={quality} flipped={flipped} onSelect={id=>{setSelected(id);setMode("player")}} onUnavailable={()=>{setRenderer("2d");setGraphicsError(true)}}/></Suspense>:<>
           <svg className="new-pitch" viewBox={`${zoomX} ${zoomY} ${1000/zoom} ${660/zoom}`} role="img" aria-label="Interactive two dimensional 11 versus 11 football match">
             <rect width="1000" height="660" fill="#0b352c"/>
             {Array.from({length:12},(_,i)=><rect key={i} x={20+i*80} y="20" width="80" height="620" fill={i%2===0?"#15553c":"#124a38"}/>)}
@@ -152,7 +161,7 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
             <circle data-testid="match-ball" cx={x} cy={y} r="5.8" fill="#fff" stroke="#182c2a" strokeWidth="2.3"/>
             {current.phase===1&&<circle cx={x} cy={y} r="11" stroke="#a6e4fa" opacity=".7" fill="none"/>}
             {current.phase===2&&<circle cx={x} cy={y} r="14" stroke="#ffca7c" opacity=".8" fill="none"/>}
-          </svg>
+          </svg></>}
           <div className="new-pitchoverlay"><span><i className="new-live-dot"/> LIVE SIMULATION</span><span>{current.owner>=0?nearest?.name+" ON THE BALL":current.phase===1?"PASS IN FLIGHT":current.phase===2?"SHOT IN FLIGHT":current.phase===3?"RESTART":current.phase===4?"LOOSE BALL":"MATCH ACTIVE"}</span></div>
           {last&&<div className="new-eventbanner"><span>{mtime(last.time)}</span><strong>{last.text}</strong></div>}
         </div>
@@ -165,8 +174,8 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
           <span>90:00</span>
           <button onClick={()=>setSpeed(v=>v===1?2:v===2?4:v===4?8:1)} className="new-speed"><FastForward size={15}/>{speed}×</button>
         </div>
-        {showPlayerStats&&<div className="new-mobile-stats"><strong>#{match.players[selected].number} {match.players[selected].name}</strong><span>{(individual[selected].speed*3.6).toFixed(0)} km/h · Pass {individual[selected].completed}/{individual[selected].attempted} · Wins {individual[selected].wins}</span><small>Tap a player to inspect their stats.</small></div>}
-        <div className="new-moment-controls"><button onClick={()=>{const next=match.events.find(e=>e.type==="shot"&&e.time>time+2);if(next){setTime(Math.max(0,next.time-8));setPlaying(true);setInspected(null);}}}>Next chance →</button><span>{match.matchId} · {playing?"Playing":"Paused"} · {showPlayerStats?`${labels.length} clear stat labels`:"Select a player for detail"}</span></div>
+        {showPlayerStats&&<div className={renderer==="3d"?"new-mobile-stats new-3d-stats":"new-mobile-stats"}><strong>#{match.players[selected].number} {match.players[selected].name}</strong><span>{(individual[selected].speed*3.6).toFixed(0)} km/h · Pass {individual[selected].completed}/{individual[selected].attempted} · Wins {individual[selected].wins}</span><small>Tap a player to inspect their stats.</small></div>}
+        <div className="new-moment-controls"><button onClick={()=>{const next=match.events.find(e=>e.type==="shot"&&e.time>time+2);if(next){setTime(Math.max(0,next.time-8));setPlaying(true);setInspected(null);}}}>Next chance →</button><span>{match.matchId} · {playing?"Playing":"Paused"} · {showPlayerStats?renderer==="3d"?"Selected-player stats":"Nearby stat labels":"Select a player for detail"}</span></div>
         {inspectedVisible&&<section className="new-inspection"><span className="new-kicker">REPLAY EVIDENCE · {inspectedVisible.id}</span><p>{inspectedVisible.text}</p>{inspectedVisible.type==="shot"&&<p>{shotExplanation(inspectedVisible)}</p>}{inspectedVisible.sourceId&&<button onClick={()=>{const source=visible.find(e=>e.id===inspectedVisible.sourceId);if(source)seekEvent(source);}}>Inspect source {inspectedVisible.sourceId} →</button>}</section>}
         <section className="new-analysis"><div className="new-analysis-heading"><div><span className="new-kicker">EVENT-GROUNDED INTELLIGENCE</span><h3>Follow the match story</h3></div><span className="new-rule-tag">RULE-BASED · SYNTHETIC</span></div>
           <div className="new-lenses" aria-label="Audience perspective">{(["fan","analyst","club","player"] as Lens[]).map(view=><button key={view} aria-pressed={lens===view} onClick={()=>setLens(view)}>{view[0].toUpperCase()+view.slice(1)}</button>)}</div>
