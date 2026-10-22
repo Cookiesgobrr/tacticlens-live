@@ -78,6 +78,25 @@ try{
   assert.equal(rendered.people.length,22);
   for(let i=0;i<22;i++){assert.ok(Math.abs(rendered.people[i].x-original.people[i].x)<1e-5);assert.ok(Math.abs(rendered.people[i].y-original.people[i].y)<1e-5);}
   assert.ok(Math.abs(rendered.ball.x-original.ball.x)<1e-5&&Math.abs(rendered.ball.y-original.ball.y)<1e-5&&Math.abs(rendered.ball.z-original.ball.z)<1e-5);
+  await page.getByRole('button',{name:'Zoom in',exact:true}).click();
+  await page.waitForTimeout(250);
+  assert.ok(JSON.parse(await canvas.getAttribute('data-camera')).zoom>1);
+  await canvas.scrollIntoViewIfNeeded();await canvas.hover();await page.mouse.wheel(0,200);
+  await page.waitForTimeout(200);assert.ok(JSON.parse(await canvas.getAttribute('data-camera')).zoom<1.15);
+  await page.getByRole('button',{name:'Reset camera',exact:true}).click();await page.waitForTimeout(200);
+  assert.equal(JSON.parse(await canvas.getAttribute('data-camera')).zoom,1);
+  const cdp=await page.context().newCDPSession(page);await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
+  const cb=await canvas.boundingBox(),cx=cb.x+cb.width/2,cy=cb.y+cb.height/2;
+  const touches=d=>[{x:cx-d,y:cy,id:0},{x:cx+d,y:cy,id:1}];
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:touches(35)});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:touches(55)});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(200);
+  assert.ok(JSON.parse(await canvas.getAttribute('data-camera')).zoom>1.3,'Real two-finger pinch must zoom');
+  await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:false});await cdp.detach();
+  await page.getByRole('button',{name:'Reset camera',exact:true}).click();
+  await timeline.fill('4678');await page.getByRole('button',{name:'Play',exact:true}).click();
+  for(let k=0;k<12;k++){await page.waitForTimeout(250);const c=JSON.parse(await canvas.getAttribute('data-camera'));assert.ok(Math.abs(c.ballNdc[0])<.95&&Math.abs(c.ballNdc[1])<.95,'Moving shot stays framed');}
+  await page.getByRole('button',{name:'Pause',exact:true}).click();await timeline.fill('2700');
   await page.screenshot({path:new URL('../test-results/3d-broadcast.png',import.meta.url).pathname,fullPage:true});
   for(const camera of ['tactical','player']){
     await page.getByRole('combobox',{name:'3D camera'}).selectOption(camera);await page.waitForTimeout(200);
