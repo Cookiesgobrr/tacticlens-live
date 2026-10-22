@@ -29,3 +29,7 @@ Shot captions contain pre-outcome xG only. A later outcome replaces that cue onl
 ## Verified AI-moment exports
 
 Inside a genuine Foundry card, expand “Agent trace, all evidence & broadcast exports.” The AI JSON uses `tacticlens.ai-moment.v1` and includes the current card, selected audience, rendered evidence sentences, source IDs, replay boundary, generation timestamp and three provider response IDs. “Export AI broadcast VTT” exports the current audience composition on the match clock, capped at eight seconds and the current replay time. Exact-start prefixes have no positive-duration cue yet. These are precomputed AI selections of canonical facts, not fresh inference. The existing general event JSON/VTT exports retain their deterministic provenance.
+
+### Versioned formation evidence
+
+Deterministic JSON provenance now includes `engineVersion` and both `formations`. Classic `generateMatch(seed)` remains reproducible. UI seeds other than 82 use `formations-v2` and `SIM-<seed>-F2` IDs, preventing confusion with classic outcomes. Seed 82 remains `SIM-82`; its event stream and genuine Foundry cache are unchanged. Highlight replay is a timed pre-roll; source-evidence buttons remain exact paused seeks.

@@ -29,7 +29,7 @@ export function buildEvidenceReport(match:Timeline,asOfSecond:number,view:Export
   });
   return {
     schemaVersion:'tacticlens.evidence.v1',matchId:match.matchId,seed:match.seed,asOfSecond,
-    provenance:{simulation:match.simulation,narrativeProvider:'rule-based',
+    provenance:{simulation:match.simulation,engineVersion:match.engineVersion,formations:match.formations,narrativeProvider:'rule-based',
       probabilityModel:'simplified-synthetic-xg',realWorldCalibrated:false,foundryEvidence:false},
     view:{...view},totals:pulse(events),
     recap:{headline:story.headline,text:story.text,evidenceIds:story.evidence.map(e=>e.id)},

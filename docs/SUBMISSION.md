@@ -2,7 +2,7 @@
 
 ## Project description
 
-**TacticLens Live makes football explanations inspectable.** Watch a fictional 11v11 match in 2D or 3D, switch between fan, analyst, club supporter and player perspectives, and follow every explanation back to the event that supports it. Microsoft Foundry agents select, verify and compose the evidence. Independent code checks protect the statistics, timestamps and source IDs. The same verified moments can become portable broadcast captions.
+**TacticLens Live makes football explanations inspectable.** Watch a fictional 11v11 match through a dynamic, zoomable broadcast camera, replay key moments, switch between fan, analyst, club supporter and player perspectives, and follow every explanation back to the event that supports it. Microsoft Foundry agents select, verify and compose the evidence. Independent code checks protect the statistics, timestamps and source IDs. The same verified moments can become portable broadcast captions.
 
 The demonstration follows Northport's naturally simulated **3–2 comeback from 0–2**, including a late equalizer and winning goal. The score is reproduced from seed 82, rather than scripted for the presentation.
 
@@ -13,6 +13,8 @@ Football dashboards often separate a compelling story from the numbers and repla
 ## What is built
 
 - One deterministic TypeScript match engine supplies all 22 players, possession, ball movement, goals, statistics and event IDs.
+- An original plum/green football broadcast interface keeps the match central, with a prominent Foundry companion and compact, source-linked highlight replays. Button/wheel/two-finger zoom, ball-following broadcast, tactical and player cameras work on the shared timeline.
+- Five formations affect real starting positions and movement in a separate deterministic mode for other seeds; seed 82 remains protected.
 - React/SVG and Three.js render the same replay frames. WebGL failure returns to a working 2D view.
 - Three separate Microsoft Agent Framework agents—Insight, Verification and Presentation—use the existing Azure Foundry GPT-4.1-mini deployment.
 - Seven genuine precomputed seed 82 moments contain six evidence compositions: Fan, Analyst, two Club Supporter views, Player and Broadcast.
@@ -22,7 +24,7 @@ Football dashboards often separate a compelling story from the numbers and repla
 
 ## Architecture and evaluation
 
-See [the implemented Foundry workflow and exact execution trace](FOUNDRY_11V11.md), [the repository architecture](../README.md), [200-seed calibration](evaluation/README.md) and [export format](EVIDENCE_EXPORT.md).
+See [the implemented Foundry workflow and exact execution trace](FOUNDRY_11V11.md), [the repository architecture](../README.md), [200-seed classic calibration plus 100 formation matches](evaluation/README.md) and [export format](EVIDENCE_EXPORT.md) and [broadcast/formation contracts](BROADCAST_EXPERIENCE.md).
 
 Evaluation includes mutation tests for fabricated scores, altered xG, future source IDs, another seed, wrong actors, invented presentation claims and a verifier veto. Browser tests exercise actual cached AI, seek boundaries before/after the winner, audience changes, source links, downloads, tampered-cache rejection, desktop/mobile layout, 2D/3D coordinate parity and WebGL fallback. These are prototype integrity tests, not a real-world football prediction benchmark.
 
@@ -30,7 +32,7 @@ Evaluation includes mutation tests for fabricated scores, altered xG, future sou
 
 - Live: https://cookiesgobrr.github.io/tacticlens-live/?seed=82
 - Repository: https://github.com/Cookiesgobrr/tacticlens-live
-- Recording guide: [1:55 judge walkthrough](JUDGE_DEMO.md)
+- Recording guide: [1:50 judge walkthrough](JUDGE_DEMO.md)
 - Genuine generated cache: [foundry-sim82.json](../web/public/data/foundry-sim82.json)
 - Execution audit: [foundry-sim82-audit.json](evaluation/foundry-sim82-audit.json)
 - Video URL: **add the final accessible video link before submitting**.
@@ -41,13 +43,13 @@ After deployment, `cd web && npm run test:production -- --record` checks the act
 
 ## Claims and limitations to keep explicit
 
-All teams, players and events are fictional. Coordinates are simulated, not measured tracking. xG is a simplified synthetic model, not calibrated to professional matches. The AI performs constrained evidence selection and composition; code supplies audited factual sentences. The results are precomputed, not fresh inference on every interaction. The archived six-a-side Foundry demonstration is separate and does not explain SIM-82. The three agents share a model deployment. This is a hackathon prototype with simplified football rules and restarts.
+All teams, players and events are fictional. Coordinates are simulated, not measured tracking. xG is a simplified synthetic model, not calibrated to professional matches. The AI performs constrained evidence selection and composition; code supplies audited factual sentences. The results are precomputed, not fresh inference on every interaction. The archived six-a-side Foundry demonstration is separate and does not explain SIM-82. The three agents share a model deployment. This is a hackathon prototype with simplified football rules and restarts. Procedural gestures approximate football contact around unchanged source positions; the goal-pause ball stays at the logged goal line. The original broadcast design is league-inspired but uses no official marks or claimed affiliation.
 
 ## Submission checklist
 
 Before **October 27, 2026, 11:59 PM Pacific** (October 28, 10:59 AM Dubai), complete the actual Innovation Studio submission. Prefer finishing a day earlier. This repository and its pull requests do not submit the project.
 
-- [ ] Record the actual deployed seed 82 application using the 1:55 script; include the genuine Foundry card, source-shot click-through, audience change and exports.
+- [ ] Record the actual deployed seed 82 application using the 1:50 script; include the genuine Foundry card, source-shot click-through, audience change and exports.
 - [ ] Upload the video to an accepted public/unlisted host such as YouTube or Vimeo. Verify it plays without a judge signing in. Add captions or a clear voiceover.
 - [ ] Copy the actual video URL into the Innovation Studio project; use this project description as the factual starting point and confirm the portal's current field limits.
 - [ ] Add the live demo and public repository links; confirm current official eligibility, judging criteria, required disclosures and submission fields in the portal.
