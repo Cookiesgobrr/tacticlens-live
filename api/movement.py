@@ -10,6 +10,7 @@ import math
 from collections import defaultdict
 
 from api.simulator import PLAYERS
+from api.formations import opening_formation
 
 SAMPLE_SECONDS = 1
 ACCELERATION_CAP_MPS2 = 3.6
@@ -71,6 +72,7 @@ def build_movement(match: dict) -> dict:
     Source event coordinates and tracking estimates are never conflated.
     """
     events = sorted(match["events"], key=lambda e: (e["second"], e["id"]))
+    kickoff = opening_formation(match)
     duration = int(match["duration_seconds"])
     players = [
         {"id": team + ":" + name, "team": team, "name": name,
@@ -87,10 +89,8 @@ def build_movement(match: dict) -> dict:
         own = tracks[(actor["team"], actor["name"])]
         index = PLAYERS[actor["team"]].index(actor["name"])
         ball_init = pitch_metres(events[0]["x"], events[0]["y"]) if events else (0, 0)
-        x, z = _actor_target(0, actor["team"], index, ball_init, own[0] if own else None)
-        if own and own[0]["second"] <= 30:
-            ex, ez = pitch_metres(own[0]["x"], own[0]["y"])
-            x, z = ex, ez
+        anchor = kickoff["positions_m"][actor["id"]]
+        x, z = anchor["x"], anchor["z"]
         states.append({"x": x, "z": z, "vx": 0.0, "vz": 0.0,
                        "distance": 0.0, "peak": 0.0, "running": 0,
                        "event_index": 0})
@@ -114,6 +114,14 @@ def build_movement(match: dict) -> dict:
             future = own[state["event_index"]] if state["event_index"] < len(own) else None
             team_index = PLAYERS[actor["team"]].index(actor["name"])
             tx, tz = _actor_target(t, actor["team"], team_index, active_ball, future)
+            if t <= kickoff["hold_seconds"]:
+                anchor = kickoff["positions_m"][actor["id"]]
+                tx, tz = anchor["x"], anchor["z"]
+            elif t <= kickoff["hold_seconds"] + 5:
+                anchor = kickoff["positions_m"][actor["id"]]
+                blend = (t - kickoff["hold_seconds"]) / 5
+                tx = anchor["x"] * (1 - blend) + tx * blend
+                tz = anchor["z"] * (1 - blend) + tz * blend
             dx, dz = tx - state["x"], tz - state["z"]
             distance = _magnitude(dx, dz)
             cap = actor["max_speed_mps"]
@@ -174,6 +182,7 @@ def build_movement(match: dict) -> dict:
 
     return {
         "schema_version": "1.0",
+        "opening_formation": kickoff,
         "match_id": match["match_id"],
         "source": "deterministic-synthetic-movement",
         "measurement_status": "SIMULATED — NOT PLAYER TRACKING OR VIDEO DERIVED",
