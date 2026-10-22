@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -35,6 +38,7 @@ jobs:
       - run: npm run test:match -- --holdout
       - run: npm run test:analysis
       - run: npm run test:evidence
+      - run: npm run test:intelligence
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser

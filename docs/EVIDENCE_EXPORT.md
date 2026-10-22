@@ -25,3 +25,7 @@ Shot captions contain pre-outcome xG only. A later outcome replaces that cue onl
 ## Evaluation
 
 `npm run test:evidence` checks all audience views at kickoff, immediately before/at/after the first shot and outcome, half time and full time. Mutation tests add a goal to the totals, fabricate a probability claim, inject a future event, replace an event ID with an archived ID, claim Foundry provenance, and substitute another seeded match. All must fail closed. Browser CI downloads both files and verifies the actual downloaded contents, including a rewind before the first shot.
+
+## Verified AI-moment exports
+
+Inside a genuine Foundry card, expand “Agent trace, all evidence & broadcast exports.” The AI JSON uses `tacticlens.ai-moment.v1` and includes the current card, selected audience, rendered evidence sentences, source IDs, replay boundary, generation timestamp and three provider response IDs. “Export AI broadcast VTT” exports the current audience composition on the match clock, capped at eight seconds and the current replay time. Exact-start prefixes have no positive-duration cue yet. These are precomputed AI selections of canonical facts, not fresh inference. The existing general event JSON/VTT exports retain their deterministic provenance.

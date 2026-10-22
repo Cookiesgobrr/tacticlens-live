@@ -1,0 +1,552 @@
+{
+  "sourceSha256": "4f16f13147995a8bb02223304570d6ba47d48ab6951ac60f624570948b08646a",
+  "sourceEngine": "web/src/footballEngine.ts",
+  "costProtection": {
+    "subscriptionType": "FreeTrial",
+    "spendingLimit": "On",
+    "state": "Enabled"
+  },
+  "limits": {
+    "maxCalls": 3,
+    "maxOutputTokensPerCall": 6000,
+    "automaticRetries": 0
+  },
+  "trace": [
+    {
+      "stage": "Insight",
+      "agent": "TacticLens11Insight",
+      "status": "complete",
+      "responseId": "resp_0fe90da2490af9f1016ada3e48f8e8819694f906bfd830c837",
+      "inputTokens": 6626,
+      "outputTokens": 270,
+      "elapsedMs": 4678
+    },
+    {
+      "stage": "Verification",
+      "agent": "TacticLens11Verification",
+      "status": "complete",
+      "responseId": "resp_0ae17c6f060d7b61016ada3e4d6878819398900e63f761f386",
+      "inputTokens": 6851,
+      "outputTokens": 68,
+      "elapsedMs": 2001
+    },
+    {
+      "stage": "Presentation",
+      "agent": "TacticLens11Presentation",
+      "status": "complete",
+      "responseId": "resp_0d6a422d2562650f016ada3e4f108c8197aec0f92659d7d33f",
+      "inputTokens": 6953,
+      "outputTokens": 528,
+      "elapsedMs": 6983
+    }
+  ],
+  "responses": [
+    {
+      "stage": "Insight",
+      "responseId": "resp_0fe90da2490af9f1016ada3e48f8e8819694f906bfd830c837",
+      "output": {
+        "cards": [
+          {
+            "id": "SIM-82@809",
+            "angle": "score",
+            "claimIds": [
+              "score",
+              "team0",
+              "team1",
+              "activity",
+              "goal",
+              "chance",
+              "sequence",
+              "run",
+              "player"
+            ]
+          },
+          {
+            "id": "SIM-82@2343.75",
+            "angle": "score",
+            "claimIds": [
+              "score",
+              "team0",
+              "team1",
+              "activity",
+              "goal",
+              "chance",
+              "sequence",
+              "run",
+              "player"
+            ]
+          },
+          {
+            "id": "SIM-82@2700",
+            "angle": "score",
+            "claimIds": [
+              "score",
+              "team0",
+              "team1",
+              "activity",
+              "goal",
+              "chance",
+              "sequence",
+              "run",
+              "player"
+            ]
+          },
+          {
+            "id": "SIM-82@3010",
+            "angle": "score",
+            "claimIds": [
+              "score",
+              "team0",
+              "team1",
+              "activity",
+              "goal",
+              "chance",
+              "sequence",
+              "run",
+              "player"
+            ]
+          },
+          {
+            "id": "SIM-82@4585.25",
+            "angle": "score",
+            "claimIds": [
+              "score",
+              "team0",
+              "team1",
+              "activity",
+              "goal",
+              "chance",
+              "sequence",
+              "run",
+              "player"
+            ]
+          },
+          {
+            "id": "SIM-82@4680.25",
+            "angle": "score",
+            "claimIds": [
+              "score",
+              "team0",
+              "team1",
+              "activity",
+              "goal",
+              "chance",
+              "sequence",
+              "run",
+              "player"
+            ]
+          },
+          {
+            "id": "SIM-82@5400",
+            "angle": "score",
+            "claimIds": [
+              "score",
+              "team0",
+              "team1",
+              "activity",
+              "goal",
+              "chance",
+              "sequence",
+              "run",
+              "player"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "Verification",
+      "responseId": "resp_0ae17c6f060d7b61016ada3e4d6878819398900e63f761f386",
+      "output": {
+        "approved": true,
+        "checkedMomentIds": [
+          "SIM-82@809",
+          "SIM-82@2343.75",
+          "SIM-82@2700",
+          "SIM-82@3010",
+          "SIM-82@4585.25",
+          "SIM-82@4680.25",
+          "SIM-82@5400"
+        ],
+        "issues": []
+      }
+    },
+    {
+      "stage": "Presentation",
+      "responseId": "resp_0d6a422d2562650f016ada3e4f108c8197aec0f92659d7d33f",
+      "output": {
+        "cards": [
+          {
+            "id": "SIM-82@809",
+            "modes": {
+              "fan": [
+                "score",
+                "run",
+                "goal"
+              ],
+              "analyst": [
+                "chance",
+                "sequence",
+                "activity"
+              ],
+              "club_home": [
+                "team0",
+                "score",
+                "activity"
+              ],
+              "club_away": [
+                "team1",
+                "score",
+                "run"
+              ],
+              "player": [
+                "player",
+                "chance",
+                "sequence"
+              ],
+              "broadcast": [
+                "score",
+                "goal",
+                "team1"
+              ]
+            }
+          },
+          {
+            "id": "SIM-82@2343.75",
+            "modes": {
+              "fan": [
+                "score",
+                "run",
+                "goal"
+              ],
+              "analyst": [
+                "chance",
+                "sequence",
+                "activity"
+              ],
+              "club_home": [
+                "team0",
+                "score",
+                "activity"
+              ],
+              "club_away": [
+                "team1",
+                "score",
+                "run"
+              ],
+              "player": [
+                "player",
+                "chance",
+                "sequence"
+              ],
+              "broadcast": [
+                "score",
+                "goal",
+                "team1"
+              ]
+            }
+          },
+          {
+            "id": "SIM-82@2700",
+            "modes": {
+              "fan": [
+                "score",
+                "run",
+                "goal"
+              ],
+              "analyst": [
+                "chance",
+                "sequence",
+                "activity"
+              ],
+              "club_home": [
+                "team0",
+                "score",
+                "activity"
+              ],
+              "club_away": [
+                "team1",
+                "score",
+                "run"
+              ],
+              "player": [
+                "player",
+                "chance",
+                "sequence"
+              ],
+              "broadcast": [
+                "score",
+                "goal",
+                "team1"
+              ]
+            }
+          },
+          {
+            "id": "SIM-82@3010",
+            "modes": {
+              "fan": [
+                "score",
+                "run",
+                "goal"
+              ],
+              "analyst": [
+                "chance",
+                "sequence",
+                "activity"
+              ],
+              "club_home": [
+                "team0",
+                "score",
+                "activity"
+              ],
+              "club_away": [
+                "team1",
+                "score",
+                "run"
+              ],
+              "player": [
+                "player",
+                "chance",
+                "sequence"
+              ],
+              "broadcast": [
+                "score",
+                "goal",
+                "team0"
+              ]
+            }
+          },
+          {
+            "id": "SIM-82@4585.25",
+            "modes": {
+              "fan": [
+                "score",
+                "run",
+                "goal"
+              ],
+              "analyst": [
+                "chance",
+                "sequence",
+                "activity"
+              ],
+              "club_home": [
+                "team0",
+                "score",
+                "activity"
+              ],
+              "club_away": [
+                "team1",
+                "score",
+                "run"
+              ],
+              "player": [
+                "player",
+                "chance",
+                "sequence"
+              ],
+              "broadcast": [
+                "score",
+                "goal",
+                "team0"
+              ]
+            }
+          },
+          {
+            "id": "SIM-82@4680.25",
+            "modes": {
+              "fan": [
+                "score",
+                "run",
+                "goal"
+              ],
+              "analyst": [
+                "chance",
+                "sequence",
+                "activity"
+              ],
+              "club_home": [
+                "team0",
+                "score",
+                "activity"
+              ],
+              "club_away": [
+                "team1",
+                "score",
+                "run"
+              ],
+              "player": [
+                "player",
+                "chance",
+                "sequence"
+              ],
+              "broadcast": [
+                "score",
+                "goal",
+                "team0"
+              ]
+            }
+          },
+          {
+            "id": "SIM-82@5400",
+            "modes": {
+              "fan": [
+                "score",
+                "run",
+                "goal"
+              ],
+              "analyst": [
+                "chance",
+                "sequence",
+                "activity"
+              ],
+              "club_home": [
+                "team0",
+                "score",
+                "activity"
+              ],
+              "club_away": [
+                "team1",
+                "score",
+                "run"
+              ],
+              "player": [
+                "player",
+                "chance",
+                "sequence"
+              ],
+              "broadcast": [
+                "score",
+                "goal",
+                "team0"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "decisions": {
+    "insight": {
+      "cards": [
+        {
+          "id": "SIM-82@809",
+          "angle": "score",
+          "claimIds": [
+            "score",
+            "team0",
+            "team1",
+            "activity",
+            "goal",
+            "chance",
+            "sequence",
+            "run",
+            "player"
+          ]
+        },
+        {
+          "id": "SIM-82@2343.75",
+          "angle": "score",
+          "claimIds": [
+            "score",
+            "team0",
+            "team1",
+            "activity",
+            "goal",
+            "chance",
+            "sequence",
+            "run",
+            "player"
+          ]
+        },
+        {
+          "id": "SIM-82@2700",
+          "angle": "score",
+          "claimIds": [
+            "score",
+            "team0",
+            "team1",
+            "activity",
+            "goal",
+            "chance",
+            "sequence",
+            "run",
+            "player"
+          ]
+        },
+        {
+          "id": "SIM-82@3010",
+          "angle": "score",
+          "claimIds": [
+            "score",
+            "team0",
+            "team1",
+            "activity",
+            "goal",
+            "chance",
+            "sequence",
+            "run",
+            "player"
+          ]
+        },
+        {
+          "id": "SIM-82@4585.25",
+          "angle": "score",
+          "claimIds": [
+            "score",
+            "team0",
+            "team1",
+            "activity",
+            "goal",
+            "chance",
+            "sequence",
+            "run",
+            "player"
+          ]
+        },
+        {
+          "id": "SIM-82@4680.25",
+          "angle": "score",
+          "claimIds": [
+            "score",
+            "team0",
+            "team1",
+            "activity",
+            "goal",
+            "chance",
+            "sequence",
+            "run",
+            "player"
+          ]
+        },
+        {
+          "id": "SIM-82@5400",
+          "angle": "score",
+          "claimIds": [
+            "score",
+            "team0",
+            "team1",
+            "activity",
+            "goal",
+            "chance",
+            "sequence",
+            "run",
+            "player"
+          ]
+        }
+      ]
+    },
+    "verification": {
+      "approved": true,
+      "checkedMomentIds": [
+        "SIM-82@809",
+        "SIM-82@2343.75",
+        "SIM-82@2700",
+        "SIM-82@3010",
+        "SIM-82@4585.25",
+        "SIM-82@4680.25",
+        "SIM-82@5400"
+      ],
+      "issues": []
+    }
+  }
+}

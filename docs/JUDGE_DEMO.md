@@ -14,27 +14,31 @@ Open **https://cookiesgobrr.github.io/tacticlens-live/?seed=82**. This is a real
 
 This exact timeline was checked by running the production TypeScript `generateMatch(82)` on GitHub Actions. The goal event IDs and source shot IDs are independently reproducible. The previous judge example `seed=2027` ends 0–1 and should not be used in the final five-goal story.
 
-## Suggested screen recording (1:55)
+## Recording-ready walkthrough (1:55)
 
-| Recording time | Action | Point to demonstrate |
+Use the public seed 82 link above. The UI now defaults to that seed, while the simulation's general-purpose default and calibration remain unchanged. Keep **1×** for a visible four-second shot/goal sequence. “Next AI moment” seeks to four seconds before the next cached moment and plays it; seeking does not change the simulation result.
+
+| Recording time | Action | Voiceover / claim |
 | --- | --- | --- |
-| 0:00–0:12 | Load seed 82 at kickoff, show formation; press Play. | “Twenty-two fictional players, one shared gameplay and evidence timeline.” |
-| 0:12–0:27 | Toggle 3D, then switch broadcast/tactical camera while playing. | “2D and 3D use the exact same underlying match frames; no second 3D game engine.” |
-| 0:27–0:45 | Back to 2D, seek to **39:03**; show **0–2** with the second goal and its source shot. | “The replay and statistics reproduce the same original recorded synthetic events.” |
-| 0:45–1:02 | Seek to **50:10**; select Northport and S. Grant in Player view. | “TacticLens changes its perspective with the fan, analyst, club or player.” |
-| 1:02–1:25 | Seek to **76:25**, then **78:00**; click shot evidence for `SIM-82-01628`. | “Northport equalize, then take the lead. Every goal is linked to its source shot and pre-outcome scoring probability.” |
-| 1:25–1:40 | Show export evidence JSON and broadcast VTT, both bounded by current replay time. | “The same evidence is portable as timed, machine-readable broadcast cues.” |
-| 1:40–1:50 | Show *genuine verified Foundry output for seed 82* **only if issue #30 has connected it and verified source IDs**; otherwise use the clearly labelled archived Foundry demo. | “Azure GPT-4.1-mini performs evidence-grounded explanations; old match AI is always labelled as separate.” |
-| 1:50–1:55 | Finish on the 3–2 scoreboard and 3D pitch. | “One match, multiple perspectives, source-checkable intelligence.” |
+| 0:00–0:12 | Start at kickoff; press Play. | “TacticLens makes football explanations inspectable. Twenty-two fictional players and every statistic share one deterministic match timeline.” |
+| 0:12–0:25 | Toggle 3D, try broadcast/tactical camera. | “The 2D and 3D views render the same recorded coordinates. No separate game or invented tracking data.” |
+| 0:25–0:40 | Show the second goal around **39:03.75** and the **0–2** score. Use Next AI moment from shortly before the goal if needed. | “Southbridge lead two-nil. This is a naturally generated seed, not a scripted score.” |
+| 0:40–0:55 | Show the first Northport goal at **50:10**, then use Next AI moment toward the equalizer. | “Northport begin their comeback. Foundry has precomputed the evidence for these actual SIM-82 moments.” |
+| 0:55–1:10 | Show **76:25.25** (2–2), then **78:00.25** (3–2), playing the last few seconds of the winning shot. | “The equalizer and winner are ninety-five seconds apart. The winner comes from shot SIM-82-01628, followed by goal SIM-82-01629.” |
+| 1:10–1:28 | Scroll to the Foundry card. Switch Fan → Analyst → Club supporter; select Northport, or Player and S. Grant. Expand the agent trace briefly. | “Three real GPT-4.1-mini agents select, independently review and compose the evidence. Code verifies the facts and controls factual wording. Different audiences receive different evidence compositions.” |
+| 1:28–1:40 | Click the winning source shot, then return to the winning moment. | “Every explanation links to its actual replay event and pre-outcome scoring probability. Rewinding before the winner removes that result and its AI card.” |
+| 1:40–1:50 | Advance a few seconds after the goal; export AI moment JSON and AI broadcast VTT from the expanded trace. | “Verified compositions export as source-linked evidence and timed broadcast captions. Viewer interactions make no model calls.” |
+| 1:50–1:55 | Seek to **90:00**, finish on the 3D view / 3–2 scoreboard. | “Twenty-two shots, 2.57 synthetic xG, and an inspectable three-two comeback. Two hundred deterministic matches tested.” |
 
-### Recording integrity and limitations
+### Exact timestamps and recording integrity
 
-- Verify deployed `main` has passed CI and browser checks. Until the selection PR is merged, `?seed=82` still works because it is an input to the unchanged seeded engine.
-- The goal probabilities and xG are simplified synthetic estimates, **not trained or calibrated on actual professional football**.
-- Do not describe rule-based new-match explanations as Foundry-generated. No `EVT-` ID from the archived match may be used as a `SIM-82-` source.
-- If later agent integration chooses a different seed, either have it use **82**, or transparently demonstrate the two datasets separately. Prefer seed 82 for new 11v11 AI narratives and shot evidence.
-- The demo video must be under two minutes and accessible without login to judges. Upload to a supported public/unlisted video host and submit its actual URL to Innovation Studio before the hackathon deadline.
-- Avoid unnecessary additional Azure resource provisioning, free-trial upgrade or unbounded model inference.
+- Goal times in the first table are displayed football minutes. The exact underlying seconds are **809**, **2343.75**, **3010**, **4585.25**, **4680.25**. Seeking to 78:00.00 is still just before the winner; use Next AI moment and let it play through.
+- At the winning goal there are **20 shots and about 2.41 xG** so far. The **22 shots / 2.57 xG** figures apply at full time; do not present those full-match totals early.
+- The AI is **precomputed, constrained editorial generation**: actual agents choose evidence and audience ordering; deterministic code renders the approved fact sentences. Do not claim unrestricted LLM prose, predictive accuracy, real tracking or fresh inference on each click.
+- The public cache contains seven genuine moments, including halftime and fulltime. Cards remain active for two match minutes. Other seeds, uncovered times or unmatched player views deliberately show a labelled deterministic fallback.
+- Keep the agent trace collapsed during normal match viewing; expand it only for the proof segment. Avoid showing private Azure dashboards or credentials in the recording.
+- Use a clear voiceover or captions. Upload an under-two-minute video to an accepted public/unlisted host and verify it plays without a judge signing in.
+- The actual Innovation Studio form must receive the video URL and final submission confirmation. Development merges do not submit the entry.
 
 ## Submission references
 

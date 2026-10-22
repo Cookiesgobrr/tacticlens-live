@@ -3,11 +3,13 @@ import { generateMatch, atTime, eventsUntil, validateMatch, type Side, type Even
 import {matchStory, placeLabels, shotExplanation, pulse, type Lens} from "./matchAnalysis";
 import { Pause, Play, RotateCcw, FastForward, ShieldCheck, Crosshair, Activity } from "lucide-react";
 import EvidenceExport from "./EvidenceExport";
+import FoundryMoment,{useVerifiedMatchAI} from "./FoundryMoment";
+import {aiAudience,visibleAICard} from "./momentIntelligence";
 const MatchPitch3D=lazy(()=>import("./MatchPitch3D"));
 const mtime=(v:number)=>String(Math.floor(v/60)).padStart(2,"0")+":"+String(Math.floor(v%60)).padStart(2,"0");
 type View="fan"|"analyst"|"player";
 export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
-  const [seed,setSeed]=useState(()=>{const value=new URLSearchParams(location.search).get("seed");return value!==null&&/^\d+$/.test(value)&&+value<=4294967295?+value:2927;});
+  const [seed,setSeed]=useState(()=>{const value=new URLSearchParams(location.search).get("seed");return value!==null&&/^\d+$/.test(value)&&+value<=4294967295?+value:82;});
   const [seedInput,setSeedInput]=useState(String(seed));
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
@@ -26,6 +28,8 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   const [lens,setLens]=useState<Lens>("fan");
   const [inspected,setInspected]=useState<EventLog|null>(null);
   const match=useMemo(()=>generateMatch(seed),[seed]);
+  const ai=useVerifiedMatchAI(match);
+  const aiCard=visibleAICard(ai.pack,time,lens,followTeam,selected);
   const issues=useMemo(()=>validateMatch(match),[match]);
   const current=atTime(match,time);
   const visible=eventsUntil(match,time);
@@ -72,10 +76,11 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   const selectedXg=(lastShot?.shotXg??0)*100;
   const pastShots=visible.filter(e=>e.type==="shot");
   const story=matchStory(match,visible,lens,followTeam,selected);
-  const seekEvent=(e:EventLog)=>{setTime(e.time);setPlaying(false);setInspected(e);setSelected(e.player);};
+  const seekEvent=(e:EventLog)=>{setTime(e.time);setPlaying(false);setInspected(e);setSelected(e.player);requestAnimationFrame(()=>document.querySelector(".new-pitchwrap")?.scrollIntoView({behavior:"smooth",block:"center"}));};
   const screenPeople=current.people.map(p=>({x:px(p.x),y:py(p.y)}));
   const nearby=match.players.filter(p=>p.id!==selected).sort((a,b)=>Math.hypot(current.people[a.id].x-current.ball.x,current.people[a.id].y-current.ball.y)-Math.hypot(current.people[b.id].x-current.ball.x,current.people[b.id].y-current.ball.y)).slice(0,4).map(p=>p.id);
-  const labels=showPlayerStats?placeLabels([...screenPeople,{x,y}],[selected,...nearby]):[];
+  const shotBox=lastShot&&time-lastShot.time<5?{x:Math.max(40,Math.min(840,px(lastShot.x)+25)),y:Math.max(35,py(lastShot.y)-44),width:123,height:42}:null;
+  const labels=showPlayerStats?placeLabels([...screenPeople,{x,y}],[selected,...nearby],shotBox?[shotBox]:[]):[];
   const zoomX=Math.max(0,Math.min(1000-1000/zoom,screenPeople[selected].x-500/zoom));
   const zoomY=Math.max(0,Math.min(660-660/zoom,screenPeople[selected].y-330/zoom));
   const inspectedVisible=inspected&&inspected.time<=time?inspected:null;
@@ -152,7 +157,7 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
             {lastShot && time-lastShot.time<5 && <g pointerEvents="none">
               <circle cx={px(lastShot.x)} cy={py(lastShot.y)} r={17+selectedXg*.35}
                 fill="none" stroke="#ffd66f" strokeWidth="2" strokeDasharray="5 4" opacity=".8"/>
-              <g transform={`translate(${Math.max(40,Math.min(840,px(lastShot.x)+25))} ${Math.max(35,py(lastShot.y)-44)})`}>
+              <g data-shot-probability transform={`translate(${Math.max(40,Math.min(840,px(lastShot.x)+25))} ${Math.max(35,py(lastShot.y)-44)})`}>
                 <rect width="123" height="42" rx="7" fill="#13251eed" stroke="#e9c76c"/>
                 <text x="8" y="15" fill="#fff2c2" fontSize="10" fontWeight="700">GOAL PROBABILITY</text>
                 <text x="8" y="33" fill="#ffe18a" fontSize="19" fontWeight="800">{selectedXg.toFixed(1)}%</text>
@@ -176,11 +181,11 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
           <button onClick={()=>setSpeed(v=>v===1?2:v===2?4:v===4?8:1)} className="new-speed"><FastForward size={15}/>{speed}×</button>
         </div>
         {showPlayerStats&&<div className={renderer==="3d"?"new-mobile-stats new-3d-stats":"new-mobile-stats"}><strong>#{match.players[selected].number} {match.players[selected].name}</strong><span>{(individual[selected].speed*3.6).toFixed(0)} km/h · Pass {individual[selected].completed}/{individual[selected].attempted} · Wins {individual[selected].wins}</span><small>Tap a player to inspect their stats.</small></div>}
-        <div className="new-moment-controls"><button onClick={()=>{const next=match.events.find(e=>e.type==="shot"&&e.time>time+2);if(next){setTime(Math.max(0,next.time-8));setPlaying(true);setInspected(null);}}}>Next chance →</button><span>{match.matchId} · {playing?"Playing":"Paused"} · {showPlayerStats?renderer==="3d"?"Selected-player stats":"Nearby stat labels":"Select a player for detail"}</span></div>
+        <div className="new-moment-controls"><button onClick={()=>{const next=match.events.find(e=>e.type==="shot"&&e.time>time+2);if(next){setTime(Math.max(0,next.time-8));setPlaying(true);setInspected(null);}}}>Next chance →</button>{ai.pack&&<button onClick={()=>{const next=ai.pack!.cards.filter(c=>c.moment.atSecond>time+1).sort((a,b)=>a.moment.atSecond-b.moment.atSecond)[0];if(next){setTime(Math.max(0,next.moment.atSecond-4));setPlaying(true);setInspected(null);}}}>Next AI moment →</button>}<span>{match.matchId} · {playing?"Playing":"Paused"} · {showPlayerStats?renderer==="3d"?"Selected-player stats":"Nearby stat labels":"Select a player for detail"}</span></div>
         {inspectedVisible&&<section className="new-inspection"><span className="new-kicker">REPLAY EVIDENCE · {inspectedVisible.id}</span><p>{inspectedVisible.text}</p>{inspectedVisible.type==="shot"&&<p>{shotExplanation(inspectedVisible)}</p>}{inspectedVisible.sourceId&&<button onClick={()=>{const source=visible.find(e=>e.id===inspectedVisible.sourceId);if(source)seekEvent(source);}}>Inspect source {inspectedVisible.sourceId} →</button>}</section>}
-        <section className="new-analysis"><div className="new-analysis-heading"><div><span className="new-kicker">EVENT-GROUNDED INTELLIGENCE</span><h3>Follow the match story</h3></div><span className="new-rule-tag">RULE-BASED · SYNTHETIC</span></div>
-          <div className="new-lenses" aria-label="Audience perspective">{(["fan","analyst","club","player"] as Lens[]).map(view=><button key={view} aria-pressed={lens===view} onClick={()=>setLens(view)}>{view[0].toUpperCase()+view.slice(1)}</button>)}</div>
-          <h4>{story.headline}</h4><p>{story.text}</p><div className="new-evidence-links">{story.evidence.map(e=><button key={e.id} onClick={()=>seekEvent(e)}>{mtime(e.time)} · {e.type} <small>{e.id}</small></button>)}</div>
+        <section className="new-analysis"><div className="new-analysis-heading"><div><span className="new-kicker">EVENT-GROUNDED INTELLIGENCE</span><h3>Follow the match story</h3></div><span className={aiCard?"new-rule-tag new-ai-tag":"new-rule-tag"}>{aiCard?"FOUNDRY AI · PRECOMPUTED":"RULE-BASED · SYNTHETIC"}</span></div>
+          <div className="new-lenses" aria-label="Audience perspective">{(["fan","analyst","club","player"] as Lens[]).map(view=><button key={view} aria-pressed={lens===view} onClick={()=>setLens(view)}>{view==="club"?"Club supporter":view[0].toUpperCase()+view.slice(1)}</button>)}</div>
+          {aiCard&&ai.pack?<FoundryMoment card={aiCard} pack={ai.pack} audience={aiAudience(lens,followTeam)} match={match} time={time} onSeek={seekEvent}/>:<><h4>{story.headline}</h4><p>{story.text}</p><div className="new-evidence-links">{story.evidence.map(e=><button key={e.id} onClick={()=>seekEvent(e)}>{mtime(e.time)} · {e.type} <small>{e.id}</small></button>)}</div><p className="new-muted">{ai.state==='ready'?'Precomputed Foundry evidence appears for the selected player and replay time.':ai.state==='other-seed'?'Deterministic insights for this seed. The Foundry showcase uses seed 82.':ai.state==='loading'?'Loading the optional Foundry cache; deterministic insights remain available.':'Foundry cache unavailable or rejected; showing deterministic insights.'}</p></>}
           <p className="new-muted">{mtime(time)} recap · {totals.score[0]}–{totals.score[1]} · {totals.shots[0]+totals.shots[1]} shots · {(totals.xg[0]+totals.xg[1]).toFixed(2)} xG. Calculated from events at or before the replay time.</p>
           <EvidenceExport key={match.matchId} match={match} time={time} view={{lens,team:followTeam,player:selected}}/>
         </section>
@@ -192,8 +197,8 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
       </main>
       <aside className="new-sidebar">
         <section className="new-card"><span className="new-kicker">MATCH CONTROL</span><h3>Viewing preferences</h3>
-          <label>Follow team<select value={followTeam} onChange={e=>setFollowTeam(+e.target.value as Side|2)}><option value="2">Both teams</option><option value="0">Northport FC</option><option value="1">Southbridge Athletic</option></select></label>
-          <label>Track a player<select value={selected} onChange={e=>{setSelected(+e.target.value);setMode("player")}}>
+          <label>Follow team<select aria-label="Follow team" value={followTeam} onChange={e=>setFollowTeam(+e.target.value as Side|2)}><option value="2">Both teams</option><option value="0">Northport FC</option><option value="1">Southbridge Athletic</option></select></label>
+          <label>Track a player<select aria-label="Track a player" value={selected} onChange={e=>{setSelected(+e.target.value);setMode("player")}}>
             {match.players.map(p=><option key={p.id} value={p.id}>{p.team===0?"NOR":"SOU"} · #{p.number} {p.name} ({p.role})</option>)}
           </select></label>
           <p className="new-muted">Select anyone on the pitch to track their contribution.</p>

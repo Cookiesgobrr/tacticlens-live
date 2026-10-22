@@ -35,7 +35,7 @@ export function matchStory(match:Timeline,events:EventLog[],lens:Lens,team:Side|
 }
 // Greedy labels in screen coordinates. Prioritize selected actor; hide a label
 // when no clear placement exists instead of covering another label/player.
-export function placeLabels(people:{x:number;y:number}[],ids:number[]){
+export function placeLabels(people:{x:number;y:number}[],ids:number[],reserved:{x:number;y:number;width:number;height:number}[]=[]){
   const boxes:{id:number;x:number;y:number;width:number;height:number}[]=[];
   const w=122,h=48;
   for(const id of ids){
@@ -43,9 +43,11 @@ export function placeLabels(people:{x:number;y:number}[],ids:number[]){
     for(const [dx,dy] of [[18,-65],[-140,-65],[18,22],[-140,22],[-61,-90],[-61,42]]){
       const x=Math.max(25,Math.min(975-w,p.x+dx)),y=Math.max(55,Math.min(610-h,p.y+dy));
       const overlaps=boxes.some(b=>x<b.x+w+5&&x+w+5>b.x&&y<b.y+h+5&&y+h+5>b.y);
+      const coversOverlay=reserved.some(b=>x<b.x+b.width+5&&x+w+5>b.x&&y<b.y+b.height+5&&y+h+5>b.y);
       const coversPlayer=people.some(q=>q.x>x-13&&q.x<x+w+13&&q.y>y-13&&q.y<y+h+13);
-      if(!overlaps&&!coversPlayer){boxes.push({id,x,y,width:w,height:h});break;}
+      if(!overlaps&&!coversPlayer&&!coversOverlay){boxes.push({id,x,y,width:w,height:h});break;}
     }
   }
   return boxes;
 }
+

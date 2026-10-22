@@ -223,3 +223,7 @@ __marimo__/
 node_modules/
 *.tsbuildinfo
 web/test-results/
+
+
+# Local 11v11 operator inputs, reservations and diagnostics (never credentials)
+artifacts/

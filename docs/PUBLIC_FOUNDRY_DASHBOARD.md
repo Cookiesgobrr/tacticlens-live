@@ -1,3 +1,7 @@
+# Archived six-a-side Foundry dashboard
+
+The following integration belongs only to the archived dataset. The primary 11v11 studio now uses the separate [verified SIM-82 workflow](FOUNDRY_11V11.md) and static cache.
+
 # Public dashboard: cached, real Foundry intelligence
 
 The React application retrieves **only** GET
@@ -41,3 +45,4 @@ This is configuration only: it does not execute the model, and the
 GET endpoint is public, read-only and cached. Be aware that a publicly
 accessible Azure Function endpoint can still incur request, storage
 and monitoring costs if abused. Keep cost monitoring enabled.
+

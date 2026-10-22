@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {generateMatch} from '../src/footballEngine.ts';
+import {momentFacts} from '../src/momentIntelligence.ts';
+const source=JSON.parse(readFileSync(process.argv[2],'utf8'));
+const m=generateMatch(82);
+assert.equal(source.schemaVersion,'tacticlens.source11.v1');
+assert.equal(source.matchId,m.matchId);assert.equal(source.seed,82);assert.equal(source.duration,m.duration);
+assert.deepEqual(source.players,m.players);assert.deepEqual(source.events,m.events);
+assert.deepEqual(source.moments,[...m.events.filter(e=>e.type==='goal').map(e=>e.time),2700,5400].sort((a,b)=>a-b).map(t=>momentFacts(m,t)));
+console.log('AI input matches the production engine, including every factual sentence and source event.');
