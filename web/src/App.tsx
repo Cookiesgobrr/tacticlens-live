@@ -1,3 +1,4 @@
+import FootballMatch2D from "./FootballMatch2D";
 import PerspectiveStudio, { type Perspective, type ComparisonMoment } from "./PerspectiveStudio";
 import Replay3D, { type MovementFeed, type BallPlayback, type ReplayCamera } from "./Replay3D";
 import { validateFoundryCache, type PublishedInsight } from "./foundry";
@@ -154,6 +155,7 @@ function StatBar({ label, left, right, suffix = "" }: {
 }
 
 function App() {
+  const [legacyView, setLegacyView] = useState(false);
   const [match, setMatch] = useState<Match | null>(null);
   const [error, setError] = useState("");
   const [clock, setClock] = useState(0);
@@ -307,8 +309,9 @@ function App() {
     if (replay) setPlaying(true);
   };
 
+  if (!legacyView) return <FootballMatch2D onLegacy={() => setLegacyView(true)} />;
   return (
-    <div className="app-shell">
+    <div className="app-shell"><button className="legacy-return" onClick={() => setLegacyView(false)}>← Back to new 11v11 2D match</button>
       <header className="nav">
         <div className="nav-brand">
           <div className="brand-symbol"><Activity size={22} strokeWidth={2.5} /></div>
