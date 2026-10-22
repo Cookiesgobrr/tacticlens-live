@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
-import {mkdirSync} from 'node:fs';
+import {mkdirSync,readFileSync} from 'node:fs';
 import {chromium} from 'playwright';
 const root=new URL('../',import.meta.url);
 const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','5179','--strictPort'],{cwd:root,stdio:'ignore'});
@@ -37,6 +37,20 @@ try{
   });
   assert.deepEqual(await page.locator('.new-xg-totals b').allTextContents(),expected.xg.map(x=>`${x} xG`));
   assert.equal(await page.locator('.new-shotmap [role=button]').count(),expected.shots);
+  const jsonDownload=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export evidence JSON',exact:true}).click();
+  const jsonFile=await jsonDownload;
+  const exported=JSON.parse(readFileSync(await jsonFile.path(),'utf8'));
+  assert.equal(exported.asOfSecond,2700);
+  assert.equal(exported.provenance.foundryEvidence,false);
+  assert.equal(exported.totals.shots.reduce((a,b)=>a+b),expected.shots);
+  assert.ok(exported.events.every(e=>e.time<=2700));
+  const vttDownload=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export broadcast VTT',exact:true}).click();
+  const vttFile=await vttDownload;
+  const vtt=readFileSync(await vttFile.path(),'utf8');
+  assert.ok(vtt.startsWith('WEBVTT\n\n'));
+  assert.equal((vtt.match(/ --> /g)??[]).length,exported.cues.length);
   const boxes=await pitch.locator('[data-stat-label] rect').evaluateAll(nodes=>nodes.map(n=>{const b=n.getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height}}));
   assert.ok(boxes.length>0&&boxes.length<=5);
   for(let i=0;i<boxes.length;i++)for(const b of boxes.slice(i+1)){const a=boxes[i];assert.ok(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y,'Stat labels must not overlap');}
@@ -47,6 +61,11 @@ try{
   await timeline.fill(String(expected.firstShot.time-.25));
   assert.equal(await page.locator('.new-shotmap [role=button]').count(),0);
   assert.deepEqual(await page.locator('.new-xg-totals b').allTextContents(),['0.00 xG','0.00 xG']);
+  const earlyDownload=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export evidence JSON',exact:true}).click();
+  const early=JSON.parse(readFileSync(await (await earlyDownload).path(),'utf8'));
+  assert.deepEqual(early.totals.shots,[0,0]);assert.equal(early.cues.length,0);
+  assert.ok(!early.events.some(e=>e.id===expected.firstShot.id));
   await page.getByRole('combobox',{name:'Pitch zoom'}).selectOption('2');
   assert.ok((await pitch.getAttribute('viewBox')).endsWith('500 330'));
   await page.getByRole('combobox',{name:'Pitch zoom'}).selectOption('1');
