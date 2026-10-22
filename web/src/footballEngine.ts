@@ -355,7 +355,7 @@ export function generateMatch(seed=2927):Timeline{
       }
       ball[j*3]=ballX;ball[j*3+1]=ballY;ball[j*3+2]=ballZ;
       owners[j]=owner;
-      ballPhases[j]=flight ? (flight.type==="pass"?1:2) : looseBall ? 4 : now<pauseUntil ? 3 : 0;
+      ballPhases[j]=owner<0 ? 1 : now<pauseUntil ? 3 : 0;
     }
   }
   return {players:players.map(({id,team,number,name,role})=>({id,team,number,name,role})),
