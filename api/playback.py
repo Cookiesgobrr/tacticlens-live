@@ -64,12 +64,10 @@ def build_playback(match: dict, movement: dict) -> dict:
     # a teammate controls the ball, makes one short visual handoff, then
     # the first source-event actor carries into their recorded moment.
     # The handoff is NOT appended to match["events"] or to match statistics.
-    supporter = next(
-        (i for i, p in enumerate(players)
-         if p["team"] == first["team"] and i != first_idx),
-        first_idx,
-    )
-    opening_start = max(1, first["second"] // 3)
+    formation = movement["opening_formation"]
+    supporter = player_ids[formation["supporter_id"]]
+    first_idx = player_ids[formation["kicker_id"]]
+    opening_start = formation["hold_seconds"]
     opening_end = min(first["second"] - 1, opening_start + 3)
 
     for t in range(duration + 1):
@@ -88,7 +86,7 @@ def build_playback(match: dict, movement: dict) -> dict:
                 ball_frames.append([round(bx, 2), round(bz, 2),
                                     round(height, 2), -1, 3])
             else:
-                owner_idx = supporter if t < opening_start else first_idx
+                owner_idx = first_idx if t < opening_start else (first_idx if t >= opening_end else supporter)
                 bx, bz = _actor(movement, owner_idx, t)
                 ball_frames.append([round(bx, 2), round(bz, 2),
                                     0.42, owner_idx, 0])
@@ -205,8 +203,8 @@ def build_playback(match: dict, movement: dict) -> dict:
             "before_first_recorded_event": first["second"],
             "visual_handoff_start": opening_start,
             "visual_handoff_end": opening_end,
-            "from_player_id": players[supporter]["id"],
-            "to_player_id": first_actor_id,
+            "from_player_id": formation["kicker_id"],
+            "to_player_id": formation["supporter_id"],
             "disclaimer": "Illustrative pre-event opening; not a logged pass or statistic.",
         },
         "method": "Ball follows a simulated controlling player, moves through source-linked pass/shot phases and interpolates inferred changes of possession. The pre-event opening is explicitly illustrative; source match event facts remain unchanged.",
