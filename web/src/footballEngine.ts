@@ -116,7 +116,7 @@ export function generateMatch(seed=2927):Timeline{
   let owner=9, possession:Side=0, flight:Flight|null=null, ballX=W/2,ballY=H/2,ballZ=0.35;
   let pauseUntil=2, decisionAt=3.5, goalPause=0, restartSide:Side=0;
   let phase: "kickoff"|"live"|"goal-pause"|"dead-ball"="kickoff";
-  
+
   let looseBall=false;
 
   log(0,0,9,"kickoff","Northport kick off. Both teams set up in 4-3-3.");
@@ -208,7 +208,7 @@ export function generateMatch(seed=2927):Timeline{
     const candidates=players.map(p=>({p,d:dist(p.x,p.y,ballX,ballY)}))
       .filter(v=>v.d<1.4).sort((a,b)=>a.d-b.d);
     if(!candidates.length)return;
-    
+
     owner=candidates[0].p.id;possession=players[owner].team;looseBall=false;
 
     ballX=players[owner].x;ballY=players[owner].y;
