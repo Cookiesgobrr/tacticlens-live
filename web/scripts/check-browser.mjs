@@ -51,10 +51,45 @@ try{
   assert.ok((await pitch.getAttribute('viewBox')).endsWith('500 330'));
   await page.getByRole('combobox',{name:'Pitch zoom'}).selectOption('1');
   await timeline.fill('2700');
+  await page.getByRole('button',{name:'3D studio',exact:true}).click();
+  const canvas=page.locator('.new-pitch3d canvas');await canvas.waitFor();
+  await page.waitForFunction(()=>document.querySelector('.new-pitch3d canvas')?.dataset.renderedFrame);
+  const rendered=JSON.parse(await canvas.getAttribute('data-rendered-frame'));
+  const original=await page.evaluate(async()=>{const {generateMatch,atTime}=await import('/src/footballEngine.ts');return atTime(generateMatch(),2700)});
+  assert.equal(rendered.people.length,22);
+  for(let i=0;i<22;i++){assert.ok(Math.abs(rendered.people[i].x-original.people[i].x)<1e-5);assert.ok(Math.abs(rendered.people[i].y-original.people[i].y)<1e-5);}
+  assert.ok(Math.abs(rendered.ball.x-original.ball.x)<1e-5&&Math.abs(rendered.ball.y-original.ball.y)<1e-5&&Math.abs(rendered.ball.z-original.ball.z)<1e-5);
+  await page.screenshot({path:new URL('../test-results/3d-broadcast.png',import.meta.url).pathname,fullPage:true});
+  for(const camera of ['tactical','player']){
+    await page.getByRole('combobox',{name:'3D camera'}).selectOption(camera);await page.waitForTimeout(200);
+    await page.screenshot({path:new URL(`../test-results/3d-${camera}.png`,import.meta.url).pathname,fullPage:true});
+  }
+  await page.getByRole('button',{name:'Flip pitch',exact:true}).click();
+  await page.getByRole('combobox',{name:'Graphics quality'}).selectOption('medium');
+  await canvas.waitFor();await page.waitForTimeout(200);
+  await page.getByRole('button',{name:'2D pitch',exact:true}).click();
+  await pitch.waitFor();assert.equal(+(await timeline.inputValue()),2700);
   await page.setViewportSize({width:390,height:844});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No horizontal overflow on mobile');
   assert.ok(await page.locator('.new-mobile-stats').isVisible());
   await page.screenshot({path:new URL('../test-results/mobile.png',import.meta.url).pathname,fullPage:true});
+  const mobile3d=page.locator('.new-pitch3d canvas');
+  await page.getByRole('button',{name:'3D studio',exact:true}).click();await mobile3d.waitFor();
+  assert.ok(await page.locator('.new-mobile-stats').isVisible());
+  await page.screenshot({path:new URL('../test-results/3d-mobile.png',import.meta.url).pathname,fullPage:true});
+  await page.getByRole('button',{name:'2D pitch',exact:true}).click();
+  await page.getByRole('spinbutton',{name:'Reproducible match seed'}).fill('2027');
+  await page.getByRole('button',{name:'Load',exact:true}).click();
+  await timeline.fill('5400');
+  const expectedScore=await page.evaluate(async()=>{const {generateMatch}=await import('/src/footballEngine.ts');const m=generateMatch(2027);return [0,1].map(team=>m.events.filter(e=>e.type==='goal'&&e.team===team).length).join(' : ')});
+  assert.ok((await page.locator('.new-score').innerText()).includes(expectedScore));
+  const fallback=await browser.newPage();
+  await fallback.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){if(type==='webgl'||type==='webgl2')return null;return original.call(this,type,...args)}});
+  await fallback.goto('http://127.0.0.1:5179');await fallback.locator('.new-pitch').waitFor();
+  await fallback.getByRole('button',{name:'3D studio',exact:true}).click();
+  await fallback.getByRole('status').filter({hasText:'3D graphics are unavailable'}).waitFor();
+  assert.ok(await fallback.locator('.new-pitch').isVisible());
+  await fallback.close();
   assert.deepEqual(errors,[]);
-  console.log('Browser smoke passed: 22 actors, seeking, wall-clock 1x, restart, stats, desktop/mobile layout.');
+  console.log('Browser gates passed: 22 actors, 1x/seek/zoom/restart, no future xG, labels, seeded score, 3D frame parity/cameras/quality, mobile and WebGL fallback.');
 }finally{await browser?.close();server.kill();}
