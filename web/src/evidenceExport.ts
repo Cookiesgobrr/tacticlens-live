@@ -18,7 +18,9 @@ export function buildEvidenceReport(match:Timeline,asOfSecond:number,view:Export
   const actions=events.filter(e=>['shot','goal','save','miss'].includes(e.type));
   const cues:BroadcastCue[]=actions.flatMap((e,i)=>{
     // A result can replace a shot cue only after that result has occurred.
-    const endSecond=Math.min(e.time+6,actions[i+1]?.time??asOfSecond,asOfSecond);
+    // WebVTT has millisecond resolution. Floor the export boundary so a
+    // sub-millisecond replay prefix cannot create a zero-length/future cue.
+    const endSecond=Math.floor(Math.min(e.time+6,actions[i+1]?.time??asOfSecond,asOfSecond)*1000)/1000;
     if(endSecond<=e.time)return [];
     const club=e.team===0?'Northport':'Southbridge';
     const detail=e.type==='shot'?`${match.players[e.player].name} shoots · ${((e.shotXg??0)*100).toFixed(1)}% synthetic xG`:e.text;

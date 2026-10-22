@@ -4,13 +4,14 @@ import {auditEvidenceReport,broadcastVtt,buildEvidenceReport,vttTimestamp} from 
 const match=generateMatch(2027);
 const firstShot=match.events.find(e=>e.type==='shot');
 const firstResult=match.events.find(e=>e.sourceId===firstShot.id);
-for(const time of [0,firstShot.time-.01,firstShot.time,firstShot.time+.01,firstResult.time-.01,firstResult.time,2700,5400]){
+for(const time of [0,firstShot.time-.01,firstShot.time,firstShot.time+.0001,firstShot.time+.0006,firstShot.time+.01,firstResult.time-.01,firstResult.time,2700,5400]){
   for(const lens of ['fan','analyst','club','player']){
     const report=buildEvidenceReport(match,time,{lens,team:0,player:9});
     assert.deepEqual(auditEvidenceReport(match,JSON.parse(JSON.stringify(report))),[]);
     assert.deepEqual(report.events,eventsUntil(match,time));
     assert.ok(report.events.every(e=>e.time<=time));
     assert.ok(report.cues.every(c=>c.startSecond<c.endSecond&&c.endSecond<=time));
+    assert.ok(report.cues.every(c=>vttTimestamp(c.startSecond)!==vttTimestamp(c.endSecond)),'Every caption has a positive duration at millisecond precision');
     for(const cue of report.cues)assert.ok(cue.evidenceIds.every(id=>report.events.some(e=>e.id===id&&e.time<=cue.startSecond)));
     for(let i=1;i<report.cues.length;i++)assert.ok(report.cues[i].startSecond>=report.cues[i-1].endSecond);
     const vtt=broadcastVtt(report);
