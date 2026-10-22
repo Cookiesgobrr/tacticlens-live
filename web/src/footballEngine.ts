@@ -10,20 +10,23 @@
 export type Side = 0 | 1;
 export type EventType =
   | "kickoff" | "pass" | "interception" | "tackle"
-  | "shot" | "goal" | "save" | "turnover" | "receive" | "loose";
+  | "shot" | "goal" | "save" | "turnover" | "receive" | "loose" | "miss" | "restart" | "recovery";
 export type EventLog = {
   id: string; time: number; team: Side; player: number;
   type: EventType; x: number; y: number; text: string;
   target?: number; completed?: boolean; distance?: number;
   shotXg?: number;
   shotDistance?: number; shotAngle?: number; shotPressure?: number;
+  sourceId?: string; // Resolved action points to the originating pass/shot.
+  targetX?: number; targetY?: number;
 };
 export type Footballer = {
   id: number; team: Side; number: number; name: string; role: string;
-  anchorX: number; anchorY: number; x: number; y: number;
+  x: number; y: number;
   vx: number; vy: number; maxSpeed: number;
 };
 export type Timeline = {
+  seed:number; matchId:string;
   players: Pick<Footballer,"id"|"team"|"number"|"name"|"role">[];
   frameSeconds: number;
   duration: number;
@@ -37,7 +40,7 @@ export type Timeline = {
   simulation: "deterministic-synthetic-11v11";
 };
 const DT = 0.25;
-const SNAP = 0.5;
+const SNAP = DT;
 const LENGTH = 90 * 60;
 const W = 105, H = 68;
 const lerp = (a:number,b:number,t:number) => a+(b-a)*t;
@@ -48,10 +51,10 @@ const dist = (x:number,y:number,a:number,b:number)=>Math.hypot(x-a,y-b);
  * probability for OUR SIMULATOR, not a calibrated professional xG provider.
  */
 export function goalProbability(distanceM:number,angleRadians:number,defenderM:number):number {
-  const distanceFactor=Math.exp(-Math.max(0,distanceM-6)/19);
-  const angleFactor=clamp(Math.cos(angleRadians),.35,1);
-  const pressureFactor=clamp(.62+defenderM*.11,.52,1);
-  return clamp(.57*distanceFactor*angleFactor*pressureFactor,.016,.62);
+  const distanceFactor=Math.exp(-Math.max(0,distanceM-6)/12);
+  const angleFactor=clamp(Math.cos(angleRadians)**2,.08,1);
+  const pressureFactor=clamp(.50+defenderM*.10,.5,1);
+  return clamp(.39*distanceFactor*angleFactor*pressureFactor,.005,.55);
 }
 
 const ROLE = ["GK","LB","LCB","RCB","RB","LCM","CM","RCM","LW","ST","RW"];
@@ -80,7 +83,7 @@ function makePlayers(): Footballer[] {
       const top=j===0?6.1:j>=8?8.15:7.5;
       result.push({
         id:team*11+j,team,number:NUMBERS[j],name:NAMES[team][j],
-        role:ROLE[j],anchorX:x,anchorY:y,x,y,vx:0,vy:0,maxSpeed:top+(j%3)*0.18
+        role:ROLE[j],x,y,vx:0,vy:0,maxSpeed:top+(j%3)*0.18
       });
     }
   }
@@ -89,10 +92,11 @@ function makePlayers(): Footballer[] {
 type Flight = {
   type:"pass"|"shot"; team:Side; from:number; receiver:number;
   start:number; end:number; x0:number; y0:number; tx:number; ty:number;
-  xg:number; goal:boolean;
+  xg:number; outcome:"goal"|"save"|"miss"; sourceId:string;
 };
 export function generateMatch(seed=2927):Timeline{
   const rng=new Random(seed), players=makePlayers();
+  const matchId="SIM-"+(seed>>>0);
   const frames=Math.round(LENGTH/SNAP)+1;
   const positions=new Float32Array(frames*22*2);
   const ball=new Float32Array(frames*3);
@@ -105,16 +109,16 @@ export function generateMatch(seed=2927):Timeline{
   const events:EventLog[]=[];
   const log=(time:number,team:Side,player:number,type:EventType,text:string,extra:Partial<EventLog>={})=>{
     const p=players[player];
-    events.push({id:"SIM-"+String(events.length+1).padStart(5,"0"),time:+time.toFixed(2),
-      team,player,type,text,x:+p.x.toFixed(2),y:+p.y.toFixed(2),...extra});
+    events.push({id:matchId+"-"+String(events.length+1).padStart(5,"0"),time:+time.toFixed(2),
+      team,player,type,text,x:p.x,y:p.y,...extra});
+    return events[events.length-1].id;
   };
   let owner=9, possession:Side=0, flight:Flight|null=null, ballX=W/2,ballY=H/2,ballZ=0.35;
   let pauseUntil=2, decisionAt=3.5, goalPause=0, restartSide:Side=0;
-  let phase: "kickoff"|"live"|"goal-pause"="kickoff";
-  let score:[number,number]=[0,0];
+  let phase: "kickoff"|"live"|"goal-pause"|"dead-ball"="kickoff";
+  
   let looseBall=false;
-  let buildUp=0;
-  let lastShotAt=-40;
+
   log(0,0,9,"kickoff","Northport kick off. Both teams set up in 4-3-3.");
   const nearest=(team:Side,x:number,y:number,exclude=-1)=>{
     let best=-1, bd=Infinity;
@@ -126,10 +130,10 @@ export function generateMatch(seed=2927):Timeline{
     return {id:best,distance:bd};
   };
   const beginRestart=(team:Side,now:number)=>{
-    possession=team;owner=team*11+9;looseBall=false;buildUp=0;
+    possession=team;owner=team*11+9;looseBall=false;
     // Match restart during a stoppage, not an instantaneous live-play teleport.
     for(const p of players){
-      p.x=team===0 ? BASE_X[p.id%11] : W-BASE_X[p.id%11];
+      p.x=p.team===0 ? BASE_X[p.id%11] : W-BASE_X[p.id%11];
       p.y=BASE_Y[p.id%11];
       if(p.team===team&&p.id%11===9)p.x=W/2;
       if(p.team!==team&&p.id%11>=8&&Math.abs(p.x-W/2)<9.3)p.x=team===0?64:41;
@@ -157,21 +161,25 @@ export function generateMatch(seed=2927):Timeline{
         if(defender.team===from.team)continue;
         const t=clamp(((defender.x-from.x)*(q.x-from.x)+(defender.y-from.y)*(q.y-from.y))/(d*d),0,1);
         const gap=dist(defender.x,defender.y,from.x+(q.x-from.x)*t,from.y+(q.y-from.y)*t);
-        if(t>.08&&t<.94&&gap<3.4)blocked+=6*(3.4-gap)/3.4;
+        if(t>.08&&t<.94&&gap<2.6)blocked+=8*(2.6-gap)/2.6;
       }
-      const score=Math.max(0,ahead)*.35+Math.min(open,10)*.35-
-        Math.abs(d-13)*.45-blocked+(rng.next()-.5)*3;
+      // A free lateral/backward outlet beats a crowded forward lane.
+      const score=clamp(ahead,-8,12)*.12+Math.min(open,8)*.65-
+        Math.abs(d-14)*.15-blocked+(rng.next()-.5)*5;
       return {q,score};
     }).sort((a,b)=>b.score-a.score);
     const receiver=ranked[0].q,d=dist(from.x,from.y,receiver.x,receiver.y);
-    const duration=clamp(d/(13+rng.next()*5),.48,1.85);
-    const tx=clamp(receiver.x+receiver.vx*.22,1,W-1);
-    const ty=clamp(receiver.y+receiver.vy*.22,1,H-1);
-    flight={type:"pass",team:from.team,from:from.id,receiver:receiver.id,
-      start:now,end:now+duration,x0:ballX,y0:ballY,tx,ty,xg:0,goal:false};
-    log(now,from.team,from.id,"pass",
+    const duration=Math.ceil(clamp(d/(12+rng.next()*4),.5,2)/DT)*DT;
+    const pressure=nearest((1-from.team) as Side,from.x,from.y).distance;
+    // Rushed/miscued kicks change the physical destination, never a flag.
+    const spread=(.35+d*.025+Math.max(0,3-pressure)*.7)*(rng.next()<.08?6:1);
+    const tx=clamp(receiver.x+receiver.vx*.25+(rng.next()-.5)*2*spread,1,W-1);
+    const ty=clamp(receiver.y+receiver.vy*.25+(rng.next()-.5)*2*spread,1,H-1);
+    const sourceId=log(now,from.team,from.id,"pass",
       from.name+" passes toward "+receiver.name+".",
-      {target:receiver.id,distance:+dist(ballX,ballY,tx,ty).toFixed(1)});
+      {target:receiver.id,distance:dist(ballX,ballY,tx,ty),targetX:tx,targetY:ty});
+    flight={type:"pass",team:from.team,from:from.id,receiver:receiver.id,
+      start:now,end:now+duration,x0:ballX,y0:ballY,tx,ty,xg:0,outcome:"miss",sourceId};
     owner=-1;looseBall=false;possession=from.team;
     decisionAt=now+duration+1.6;
   };
@@ -183,29 +191,28 @@ export function generateMatch(seed=2927):Timeline{
     const angle=Math.atan2(Math.abs(shooter.y-H/2),Math.max(1,Math.abs(goalX-shooter.x)));
     const pressure=nearest((1-shooter.team) as Side,shooter.x,shooter.y).distance;
     const xg=goalProbability(distance,angle,pressure);
-    // The goal event is derived from this exact logged shot probability.
-    const isGoal=rng.next()<xg;
-    const ty=H/2+(rng.next()-.5)*(isGoal?6:8);
-    const shotLength=clamp(distance/26,.45,1.6);
+    // Store the exact pre-outcome probability, with no rounding in the data.
+    const sourceId=log(now,shooter.team,shooter.id,"shot",shooter.name+" shoots — "+Math.round(xg*100)+"% goal probability.",
+      {shotXg:xg,shotDistance:distance,shotAngle:angle*180/Math.PI,shotPressure:pressure});
+    const outcome=rng.next()<xg?"goal":rng.next()<.58?"save":"miss";
     const keeper=players[(1-shooter.team)*11];
+    const ty=outcome==="goal"?H/2+(rng.next()-.5)*6.6:
+      outcome==="save"?clamp(keeper.y+(rng.next()-.5)*2,24,44):H/2+(rng.next()<.5?-1:1)*(4.4+rng.next()*7);
+    const tx=outcome==="save"?keeper.x:goalX;
+    const shotLength=Math.ceil(clamp(dist(ballX,ballY,tx,ty)/25,.5,1.6)/DT)*DT;
     flight={type:"shot",team:shooter.team,from:shooter.id,receiver:-1,
-      start:now,end:now+shotLength,x0:ballX,y0:ballY,
-      tx:isGoal?goalX:keeper.x,ty:isGoal?ty:keeper.y,xg,goal:isGoal};
-    log(now,shooter.team,shooter.id,"shot",shooter.name+" shoots — "+Math.round(xg*100)+"% goal probability.",
-      {shotXg:+xg.toFixed(4),shotDistance:+distance.toFixed(1),
-       shotAngle:+(angle*180/Math.PI).toFixed(1),shotPressure:+pressure.toFixed(1)});
+      start:now,end:now+shotLength,x0:ballX,y0:ballY,tx,ty,xg,outcome,sourceId};
     owner=-1;looseBall=false;decisionAt=now+shotLength+2;
-    lastShotAt=now;buildUp=0;
   };
   const takeLoose=(now:number)=>{
     const candidates=players.map(p=>({p,d:dist(p.x,p.y,ballX,ballY)}))
       .filter(v=>v.d<1.4).sort((a,b)=>a.d-b.d);
     if(!candidates.length)return;
-    const prior=possession;
+    
     owner=candidates[0].p.id;possession=players[owner].team;looseBall=false;
-    buildUp=possession===prior?Math.min(buildUp+1,8):0;
+
     ballX=players[owner].x;ballY=players[owner].y;
-    log(now,possession,owner,"interception",players[owner].name+" collects the loose ball.");
+    log(now,possession,owner,"recovery",players[owner].name+" collects the loose ball.");
     decisionAt=now+1.4;
   };
   function resolveFlight(now:number){
@@ -213,36 +220,48 @@ export function generateMatch(seed=2927):Timeline{
     const item=flight;flight=null;
     ballX=item.tx;ballY=item.ty;ballZ=.35;
     if(item.type==="shot"){
-      if(item.goal){
-        score[item.team]++;
-        log(now,item.team,item.from,"goal",players[item.from].name+" scores!");
-        goalPause=now+3;phase="goal-pause";restartSide=(1-item.team) as Side;
+      if(item.outcome==="goal"){
+        log(now,item.team,item.from,"goal",players[item.from].name+" scores!",
+          {sourceId:item.sourceId,x:ballX,y:ballY});
+        owner=-1;goalPause=now+8;phase="goal-pause";restartSide=(1-item.team) as Side;
+      }else if(item.outcome==="save"){
+        owner=(1-item.team)*11;possession=(1-item.team) as Side;
+        const keeper=players[owner];
+        // The keeper moves to the interception point during the shot.
+        ballX=keeper.x;ballY=keeper.y;
+        log(now,possession,owner,"save",keeper.name+" gathers the shot.",{sourceId:item.sourceId});
+        decisionAt=now+3+rng.next()*3;
       }else{
-        owner=(1-item.team)*11;possession=(1-item.team) as Side;buildUp=0;
-        const keeper=players[owner];ballX=keeper.x;ballY=keeper.y;
-        log(now,possession,owner,"save",keeper.name+" gathers the shot.");
-        decisionAt=now+1.5;
+        log(now,item.team,item.from,"miss",players[item.from].name+" shoots wide.",
+          {sourceId:item.sourceId,x:ballX,y:ballY});
+        owner=-1;looseBall=false;
+        pauseUntil=now+8;phase="dead-ball";restartSide=(1-item.team) as Side;
       }
       return;
     }
     const receiver=players[item.receiver],defender=nearest((1-item.team) as Side,item.tx,item.ty);
     const receivingDistance=dist(receiver.x,receiver.y,item.tx,item.ty);
-    if(receivingDistance<2.2&&(receivingDistance<defender.distance||defender.distance>1.4)){
-      owner=receiver.id;possession=item.team;buildUp=Math.min(buildUp+1,9);
+    if(receivingDistance<1.35&&(receivingDistance<defender.distance||defender.distance>1.4)){
+      owner=receiver.id;possession=item.team;
       ballX=receiver.x;ballY=receiver.y;
       log(now,item.team,receiver.id,"receive",receiver.name+" receives the pass.",
-        {target:item.from,completed:true,distance:+dist(item.x0,item.y0,item.tx,item.ty).toFixed(1)});
+        {target:item.from,completed:true,distance:dist(item.x0,item.y0,item.tx,item.ty),sourceId:item.sourceId});
     }else if(defender.distance<1.4){
-      owner=defender.id;possession=(1-item.team) as Side;buildUp=0;
+      owner=defender.id;possession=(1-item.team) as Side;
       ballX=players[owner].x;ballY=players[owner].y;
-      log(now,possession,owner,"interception",players[owner].name+" intercepts the pass.");
+      log(now,possession,owner,"interception",players[owner].name+" intercepts the pass.",{sourceId:item.sourceId});
     }else{
       owner=-1;looseBall=true;
-      log(now,item.team,item.from,"loose",players[item.from].name+"'s pass is loose.");
+      log(now,item.team,item.from,"loose",players[item.from].name+"'s pass is loose.",{sourceId:item.sourceId,x:ballX,y:ballY});
     }
-    decisionAt=now+2.7+rng.next()*1.0;
+    decisionAt=now+3+rng.next()*3;
   }
-  function simulateMovement(time:number){
+  function simulateMovement(){
+    const pressers=[0,1].map(team=>players.filter(p=>p.team===team&&p.id%11!==0)
+      .sort((a,b)=>dist(a.x,a.y,ballX,ballY)-dist(b.x,b.y,ballX,ballY)).map(p=>p.id));
+    // Read a single pre-step snapshot for spacing: no player-order advantage.
+    const before=players.map(p=>({x:p.x,y:p.y}));
+    const moves:{vx:number;vy:number}[]=[];
     for(const p of players){
       if(phase!=="live"){
         p.vx*=.45;p.vy*=.45;
@@ -251,49 +270,46 @@ export function generateMatch(seed=2927):Timeline{
       const dir=p.team===0?1:-1;
       const isAttacking=p.team===possession;
       const intendedReceiver=flight?.type==="pass" ? flight.receiver : -1;
-      let tx=p.anchorX,ty=p.anchorY;
-      const shift=clamp((ballX-W/2)*.56,-24,24);
-      const finalThirdAdvance=clamp(buildUp*3.3,0,27);
-      // Build-up phases pull attackers toward the final third while
-      // defenders fall into a compact block. Formation roles remain distinct.
       const role=p.id%11;
-      const support=role>=8?1:role>=5?.82:role===0?0:.46;
-      const attackShift=isAttacking?dir*(4+finalThirdAdvance*support):
-        -dir*(2+Math.max(0,finalThirdAdvance-6)*.25);
-      tx=clamp(tx+shift+attackShift,2,W-2);
-      ty=clamp(ty+(ballY-p.anchorY)*.17,2,H-2);
+      const localBall=p.team===0?ballX:W-ballX;
+      const back=clamp(localBall-26,21,64);
+      const mid=clamp(localBall-5,35,78);
+      const front=clamp(localBall+17,53,94);
+      const defensiveLine=clamp(localBall-10,15,48);
+      const localTarget=isAttacking?
+        role===0?7:role<=4?back+((role===1||role===4)?5:0):role<=7?mid+(role===6?-5:2):front+(role===9?2:-3):
+        role===0?7:role<=4?defensiveLine:role<=7?clamp(localBall+3,27,61):clamp(localBall+18,43,80);
+      let tx=p.team===0?localTarget:W-localTarget;
+      const lane=isAttacking?BASE_Y[role]:[34,14,27,41,54,24,34,44,20,34,48][role];
+      let ty=clamp(lane+(ballY-H/2)*(isAttacking?.12:.28),3,H-3);
       const dBall=dist(p.x,p.y,ballX,ballY);
-      if(p.id%11===0){
-        // Keepers follow play laterally without chasing midfield balls.
-        tx=p.team===0?7.5:W-7.5;
-        ty=clamp(H/2+(ballY-H/2)*.28,23,45);
+      if(role===0){
+        tx=p.team===0?7:W-7;
+        ty=clamp(H/2+(ballY-H/2)*.23,26,42);
+        if(flight?.type==="shot"&&flight.outcome==="save"&&p.team!==flight.team){tx=flight.tx;ty=flight.ty;}
+        else if(looseBall&&dBall<12){tx=ballX;ty=ballY;}
       }else if(p.id===intendedReceiver&&flight){
         tx=flight.tx;ty=flight.ty;
-      }else if(looseBall&&dBall<14&&p.id%11!==0){
+      }else if(looseBall){
         const closest=nearest(p.team,ballX,ballY);
         if(closest.id===p.id){tx=ballX;ty=ballY;}
       }else if(p.id===owner){
-        tx=clamp(p.x+dir*14,3,W-3);
-        ty=clamp(p.y+(H/2-p.y)*.30,5,H-5);
+        // Carry into space; slow down and shield against a set defensive block.
+        const defender=nearest((1-p.team) as Side,p.x+dir*3,p.y);
+        const gap=defender.distance;
+        tx=clamp(p.x+dir*(gap<4?1:8),3,W-4);
+        ty=clamp(p.y+(H/2-p.y)*.08+(gap<5?(p.y<players[defender.id].y?-3:3):0),5,H-5);
       }else if(!isAttacking){
-        const ranks=players.filter(q=>q.team===p.team&&q.id%11!==0)
-          .map(q=>({id:q.id,d:dist(q.x,q.y,ballX,ballY)}))
-          .sort((a,b)=>a.d-b.d);
-        const rank=ranks.findIndex(q=>q.id===p.id);
-        if(rank===0 || (rank===1&&dBall<13)){
-          tx=ballX-dir*(rank===0?1.2:4.0);
-          ty=ballY+(rank===0?0:p.y>ballY?3:-3);
-        }
-      }else if(p.id!==owner&&p.id%11>=5){
-        // Supporting players make parallel runs and give the carrier outlets.
-        tx=clamp(tx+dir*(6+((p.id%11)%3)*2),2,W-2);
-        if(dBall<6) ty+=p.y>ballY?6:-6;
+        // One presser and one goal-side cover, chosen once from a frozen frame.
+        const rank=pressers[p.team].indexOf(p.id);
+        if(rank===0&&dBall<22){tx=ballX-dir*.6;ty=ballY;}
+        else if(rank===1&&dBall<11){tx=ballX-dir*5;ty=ballY+(p.y>ballY?4:-4);}
       }
       // Maintain player spacing: avoid stationary stacks and crossing runs.
       let repX=0,repY=0;
       for(const q of players){
         if(q.id===p.id)continue;
-        const dx=p.x-q.x,dy=p.y-q.y,dd=Math.hypot(dx,dy);
+        const dx=p.x-before[q.id].x,dy=p.y-before[q.id].y,dd=Math.hypot(dx,dy);
         if(dd>0.05&&dd<3.0){
           const strength=(3.0-dd)/dd;
           repX+=dx*strength;
@@ -303,9 +319,9 @@ export function generateMatch(seed=2927):Timeline{
       tx=clamp(tx+repX*2,1,W-1);
       ty=clamp(ty+repY*2,1,H-1);
       const dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy);
-      const limit=(p.id===owner?4.5:p.maxSpeed);
+      const limit=(p.id===owner?2.8:p.maxSpeed);
       const sprint=p.id===intendedReceiver||(!isAttacking&&dBall<13)||(looseBall&&dBall<12);
-      const wanted=Math.min(sprint?limit:3.6,d*1.8);
+      const wanted=Math.min(sprint?limit:p.id===owner?2.5:3.0,d*1.5);
       const wvx=d>.001?dx/d*wanted:0;
       const wvy=d>.001?dy/d*wanted:0;
       const dvx=wvx-p.vx,dvy=wvy-p.vy,da=Math.hypot(dvx,dvy);
@@ -313,12 +329,23 @@ export function generateMatch(seed=2927):Timeline{
       p.vx+=dvx*frac;p.vy+=dvy*frac;
       const length=Math.hypot(p.vx,p.vy);
       if(length>limit){p.vx=p.vx/length*limit;p.vy=p.vy/length*limit;}
-      p.x=clamp(p.x+p.vx*DT,1,W-1);
-      p.y=clamp(p.y+p.vy*DT,1,H-1);
-      void time;
+      moves[p.id]={vx:p.vx,vy:p.vy};
+    }
+    for(const p of players){
+      if(!moves[p.id])continue;
+      p.x=clamp(p.x+moves[p.id].vx*DT,1,W-1);
+      p.y=clamp(p.y+moves[p.id].vy*DT,1,H-1);
     }
   }
   function step(now:number){
+    if(phase==="dead-ball"){
+      // Dead-ball repositioning is explicit, never a live-play teleport.
+      if(now<pauseUntil)return;
+      owner=restartSide*11;possession=restartSide;
+      const keeper=players[owner];ballX=keeper.x;ballY=keeper.y;ballZ=.35;
+      phase="live";decisionAt=now+3;
+      log(now,possession,owner,"restart",keeper.name+" takes the goal kick.");
+    }
     if(phase==="goal-pause"){
       if(now>=goalPause)beginRestart(restartSide,now);
       else return;
@@ -332,24 +359,35 @@ export function generateMatch(seed=2927):Timeline{
       ballX=lerp(flight.x0,flight.tx,progress);
       ballY=lerp(flight.y0,flight.ty,progress);
       ballZ=.35+Math.sin(Math.PI*progress)*(flight.type==="shot"?2.5:.55);
-      simulateMovement(now);
+      simulateMovement();
+      if(flight.type==="pass"){
+        // Interceptions happen along the travelled segment, with physical contact.
+        const defender=nearest((1-flight.team) as Side,ballX,ballY);
+        if(now>flight.start+DT&&now<flight.end&&defender.distance<1.0){
+          const item=flight;flight=null;owner=defender.id;possession=players[owner].team;
+          ballX=players[owner].x;ballY=players[owner].y;ballZ=.35;
+          log(now,possession,owner,"interception",players[owner].name+" cuts out the pass.",{sourceId:item.sourceId});
+          decisionAt=now+2+rng.next()*2;
+          return;
+        }
+      }
       if(now>=flight.end)resolveFlight(now);
       return;
     }
-    if(looseBall){simulateMovement(now);takeLoose(now);return;}
+    if(looseBall){simulateMovement();takeLoose(now);return;}
     if(owner<0){looseBall=true;return;}
     const p=players[owner];
     possession=p.team;
     // Ball possession is attached to the controlling player's foot.
-    simulateMovement(now);
+    simulateMovement();
     ballX=clamp(p.x+(p.team===0?.5:-.5),0,W);
     ballY=clamp(p.y+.25,0,H);ballZ=.35;
     const pressure=nearest((1-possession) as Side,p.x,p.y);
-    if(pressure.distance<1.7 && rng.next()<DT*.32){
+    if(pressure.distance<1.35 && now>=decisionAt-2 && rng.next()<DT*.45){
       const tackler=players[pressure.id];
       log(now,tackler.team,tackler.id,"tackle",
-        tackler.name+" tackles "+p.name+".");
-      owner=tackler.id;possession=tackler.team;buildUp=0;
+        tackler.name+" tackles "+p.name+".",{target:p.id});
+      owner=tackler.id;possession=tackler.team;
       ballX=tackler.x;ballY=tackler.y;looseBall=false;
       decisionAt=now+1.5;
       return;
@@ -357,20 +395,18 @@ export function generateMatch(seed=2927):Timeline{
     if(now>=decisionAt){
       const goalX=possession===0?W:0;
       const range=dist(p.x,p.y,goalX,H/2);
-      // Shoot in credible ranges; avoid endless sideways passes. Short
-      // dribbles improve the angle before releasing a higher-value chance.
-      const canShoot=range<38 && Math.abs(p.y-H/2)<28;
-      const shotUrgency=canShoot?
-        clamp(.18+(38-range)*.018+Math.max(0,buildUp-3)*.03,.18,.85):0;
-      if(canShoot && now-lastShotAt>4 && rng.next()<shotUrgency){
-        makeShot(now);
-      }else if(canShoot && range<17 && now-lastShotAt>4){
-        makeShot(now);
-      }else{
-        makePass(now);
-      }
+      const angle=Math.atan2(Math.abs(p.y-H/2),Math.max(1,Math.abs(goalX-p.x)));
+      // Choice among carrying, passing and shooting depends on geometry, not
+      // the match score or a target number of goals. Crowded lanes favor recycling.
+      const canShoot=range<31&&angle<1.0&&p.id%11!==0;
+      const shotWeight=canShoot?clamp((31-range)*.014,0,.30):0;
+      if(canShoot&&rng.next()<shotWeight){makeShot(now);}
+      else if(rng.next()<.83||p.id%11===0||pressure.distance<3){makePass(now);}
+      else {decisionAt=now+2+rng.next()*2;}
+
     }
   }
+  const phaseCode=()=>phase!=="live"?3:flight?.type==="shot"?2:flight?.type==="pass"?1:looseBall?4:0;
   for(let i=0;i<=Math.round(LENGTH/DT);i++){
     const now=i*DT;
     if(i>0)step(now);
@@ -388,10 +424,10 @@ export function generateMatch(seed=2927):Timeline{
       }
       ball[j*3]=ballX;ball[j*3+1]=ballY;ball[j*3+2]=ballZ;
       owners[j]=owner;
-      ballPhases[j]=owner<0 ? 1 : now<pauseUntil ? 3 : 0;
+      ballPhases[j]=phaseCode();
     }
   }
-  return {players:players.map(({id,team,number,name,role})=>({id,team,number,name,role})),
+  return {seed,matchId,players:players.map(({id,team,number,name,role})=>({id,team,number,name,role})),
     frameSeconds:SNAP,duration:LENGTH,frames,positions,ball,owners,ballPhases,
     events,speeds,distances,simulation:"deterministic-synthetic-11v11"};
 }
@@ -399,7 +435,9 @@ export type CurrentFrame={people:{x:number;y:number}[];ball:{x:number;y:number;z
   owner:number;phase:number;speed:number[];distance:number[]};
 export function atTime(match:Timeline,time:number):CurrentFrame{
   const n=clamp(time/match.frameSeconds,0,match.frames-1);
-  const i=Math.floor(n),j=Math.min(match.frames-1,i+1),r=n-i;
+  const i=Math.floor(n),j=Math.min(match.frames-1,i+1);
+  const reset=match.events.some(e=>(e.type==="kickoff"||e.type==="restart")&&e.time===j*match.frameSeconds);
+  const r=reset?0:n-i;
   const people=match.players.map((_,p)=>({
     x:lerp(match.positions[(i*22+p)*2],match.positions[(j*22+p)*2],r),
     y:lerp(match.positions[(i*22+p)*2+1],match.positions[(j*22+p)*2+1],r),
@@ -419,24 +457,58 @@ export function eventsUntil(match:Timeline,time:number):EventLog[]{
   return sorted.slice(0,lo);
 }
 export function validateMatch(match:Timeline):string[]{
-  const failures:string[]=[];
+  const failures=new Set<string>();
   if(match.players.length!==22||new Set(match.players.map(p=>p.id)).size!==22)
-    failures.push("Expected 22 unique players");
+    failures.add("Expected 22 unique players");
   if(match.players.filter(p=>p.team===0).length!==11||match.players.filter(p=>p.team===1).length!==11)
-    failures.push("Expected 11 per team");
+    failures.add("Expected 11 per team");
   if(Math.abs(match.ball[0]-52.5)>.01||Math.abs(match.ball[1]-34)>.01)
-    failures.push("Kickoff ball is not centered");
-  for(let i=0;i<match.frames;i++){
-    if(match.ball[i*3]<-0.01||match.ball[i*3]>W+.01||
-       match.ball[i*3+1]<-0.01||match.ball[i*3+1]>H+.01)
-      {failures.push("Ball out of pitch at frame "+i);break;}
-  }
-  for(let k=0;k<match.positions.length;k+=2){
-    if(!Number.isFinite(match.positions[k])||!Number.isFinite(match.positions[k+1])||
-      match.positions[k]<-.01||match.positions[k]>W+.01||
-      match.positions[k+1]<-.01||match.positions[k+1]>H+.01){
-      failures.push("Player invalid at index "+k);break;
+    failures.add("Kickoff ball is not centered");
+  const ids=new Set<string>(), resolved=new Set<string>();
+  const sources=new Map<string,EventLog>();
+  const resets=new Set(match.events.filter(e=>e.type==="kickoff"||e.type==="restart").map(e=>Math.round(e.time/match.frameSeconds)));
+  for(const [index,e] of match.events.entries()){
+    if(ids.has(e.id))failures.add("Duplicate event ID");
+    ids.add(e.id);
+    if(e.time<0||e.time>match.duration||(index>0&&e.time<match.events[index-1].time))failures.add("Event time invalid");
+    if(match.players[e.player]?.team!==e.team)failures.add("Event actor/team mismatch");
+    if(!Number.isFinite(e.x)||!Number.isFinite(e.y))failures.add("Non-finite event coordinates");
+    if(e.type==="kickoff"){
+      const f=Math.round(e.time/match.frameSeconds);
+      for(const p of match.players){
+        const x=match.positions[(f*22+p.id)*2];
+        if(p.team===0?x>W/2+.01:x<W/2-.01)failures.add("Illegal kickoff formation");
+      }
+    }
+    if(e.type==="pass"||e.type==="shot")sources.set(e.id,e);
+    if(e.sourceId){
+      const source=sources.get(e.sourceId);
+      if(!source||source.time>=e.time)failures.add("Invalid source event");
+      if(resolved.has(e.sourceId))failures.add("Action resolved twice");
+      resolved.add(e.sourceId);
+      if(e.type==="goal"||e.type==="save"||e.type==="miss"){
+        if(source?.type!=="shot")failures.add("Shot outcome without shot");
+        if(e.type==="goal"&&(source?.team!==e.team||source?.player!==e.player||Math.min(e.x,W-e.x)>.01||Math.abs(e.y-H/2)>3.66))failures.add("Goal not a scored shot crossing goal line");
+      }else if(source?.type!=="pass")failures.add("Pass outcome without pass");
+      if(e.type==="receive"&&(source?.target!==e.player||source?.team!==e.team))failures.add("Wrong receiver");
+    }else if(["receive","goal","save","miss","loose"].includes(e.type))failures.add("Outcome missing source ID");
+    if(e.type==="shot"){
+      if(e.shotXg===undefined||!Number.isFinite(e.shotXg)||e.shotXg<=0||e.shotXg>=1)failures.add("Invalid shot xG");
+      else if(Math.abs(e.shotXg-goalProbability(e.shotDistance!,e.shotAngle!*Math.PI/180,e.shotPressure!))>1e-9)failures.add("xG does not match pre-outcome geometry");
     }
   }
-  return failures;
+  for(let i=0;i<match.frames;i++){
+    const bx=match.ball[i*3],by=match.ball[i*3+1],owner=match.owners[i];
+    if(!Number.isFinite(bx)||!Number.isFinite(by)||!Number.isFinite(match.ball[i*3+2])||bx<-.01||bx>W+.01||by<-.01||by>H+.01)failures.add("Ball invalid");
+    if(owner<-1||owner>21)failures.add("Invalid owner");
+    if(owner>=0&&dist(bx,by,match.positions[(i*22+owner)*2],match.positions[(i*22+owner)*2+1])>.85)failures.add("Carrier separated from ball");
+    if((match.ballPhases[i]===1||match.ballPhases[i]===2)&&owner!==-1)failures.add("In-flight ball has owner");
+    if(i>0&&!resets.has(i)&&dist(bx,by,match.ball[(i-1)*3],match.ball[(i-1)*3+1])>42*match.frameSeconds+1.5)failures.add("Live ball teleport");
+    for(let p=0;p<22;p++){
+      const k=(i*22+p)*2, x=match.positions[k],y=match.positions[k+1];
+      if(!Number.isFinite(x)||!Number.isFinite(y)||x<-.01||x>W+.01||y<-.01||y>H+.01)failures.add("Player invalid");
+      if(i>0&&!resets.has(i)&&dist(x,y,match.positions[k-44],match.positions[k-43])>8.6*match.frameSeconds+.02)failures.add("Live player teleport");
+    }
+  }
+  return [...failures];
 }
