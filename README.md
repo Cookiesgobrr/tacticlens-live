@@ -1,66 +1,64 @@
 # TacticLens Live
 
-**Evidence-backed football intelligence, one event at a time.**
+**Explainable match intelligence from one deterministic, fictional 11v11 match.**
 
-An original, entirely fictional proof-of-concept for Microsoft's **Inside the Game** hackathon. It replays deterministic synthetic football events, derives statistics in code, identifies an explainable change in high recoveries, and lets viewers inspect the underlying event IDs and calculation.
+[Open the public match studio](https://cookiesgobrr.github.io/tacticlens-live/) · [Judge demo (under two minutes)](docs/JUDGE_DEMO.md) · [Calibration results](docs/evaluation/README.md)
 
-> **Status: playable prototype.** Microsoft Foundry agents and cloud deployment are planned next, **not yet implemented**. No official Premier League data, match footage, or licensed assets are included.
+The match studio connects the pitch, possession, passes, shots, xG, score and explanations to one simulation clock. Switch between SVG 2D and a stylized 3D view of the **same frames**, inspect a shot, follow its event IDs, and export the evidence visible at the current replay time.
+
+## What works
+
+- 22 fictional players in 4-3-3 shapes, bounded movement, receiving/interceptions, shots, keeper actions and restarts.
+- Replay seeking, wall-clock 1× playback, player focus, optional nearby stats, shot map and cumulative synthetic xG.
+- Broadcast/tactical/player 3D cameras, low/medium quality, pitch flip and 2D fallback when WebGL is unavailable.
+- Rule-based Fan/Analyst/Club/Player explanations tied to new 11v11 event IDs.
+- Replay-time JSON evidence and WebVTT broadcast captions, with deterministic validation against fabricated totals, future events and unrelated evidence.
+- Population checks over 100 calibration and 100 holdout seeds. Means: 23.34 / 22.67 shots, 2.07 / 1.99 goals and 2.13 / 2.09 xG. Outliers are retained; full per-seed results are published.
+
+**Microsoft Foundry integration is separate.** The “Archived AI evidence demo” can read cached, previously generated GPT-4.1-mini narratives for an older synthetic dataset. Those narratives do not explain the new 11v11 match. The primary match studio makes no model calls. See [the integration boundary](docs/PUBLIC_FOUNDRY_DASHBOARD.md).
 
 ## Run locally
 
-Requires Python 3.10+ and Node.js 20+.
+Use Node.js **22.18+** for built-in TypeScript stripping and Python **3.10+** for the optional archived API.
 
-Terminal 1 (from repository root):
+```sh
+cd web
+npm ci
+npm run dev
+```
 
-    python -m venv .venv
-    source .venv/bin/activate
-    pip install -r api/requirements.txt
-    python -m uvicorn api.main:app --reload --port 8000
+Open http://localhost:5173. The primary match studio is client-side and needs no API credentials. For the archived view, run `python -m pip install -r api/requirements.txt` and `python -m uvicorn api.main:app --reload --port 8000` from the repository root in another terminal. Vite proxies `/api` there.
 
-On Windows, activate with \`.venv\\Scripts\\activate\`.
+## Verify
 
-Terminal 2:
+```sh
+python -m pytest api/tests -q
+cd web
+npm ci
+npm run test:match
+npm run test:match -- --holdout
+npm run test:analysis
+npm run test:evidence
+npm run build
+npx playwright install chromium
+npm run test:browser
+```
 
-    cd web
-    npm install
-    npm run dev
+CI runs the backend tests, both populations, analysis/export checks, TypeScript/Vite build and Chromium smoke tests. Browser artifacts include desktop/mobile screenshots, 3D camera views and WebGL fallback checks. Publication uses the existing GitHub Pages workflow.
 
-Open **http://localhost:5173**. Vite proxies \`/api\` to FastAPI on port 8000.
+## Architecture
 
-## Demo flow
+| Module | Responsibility |
+| --- | --- |
+| `web/src/footballEngine.ts` | Seeded simulation, sampled motion, possession, stable event IDs, replay interpolation and invariants |
+| `web/src/FootballMatch2D.tsx` | Match controls and time-filtered 2D pitch, score and statistics |
+| `web/src/MatchPitch3D.tsx` | Presentation of the same current frame; no independent simulation |
+| `web/src/matchAnalysis.ts` | Deterministic audience explanations, totals and stat-label placement |
+| `web/src/matchEvidence.ts` | Replay-time report/captions and strict deterministic report audit |
+| `api/`, `LegacyApp.tsx`, `foundry.ts` | Archived dataset, backend evidence gates and cached Foundry demo |
 
-1. Click **Jump to insight** (or scrub the 90-minute timeline to 75:00).
-2. Open the new insight and its **Evidence Trail**.
-3. Switch between **Fan**, **Analyst**, and **Broadcast** perspectives.
-4. Inspect the exact event IDs and two comparison windows.
-5. Restart the match and use **12×** replay to see events develop.
+## Scope and data
 
-## API
+All teams, players and match events are fictional. No external league match data, footage or official marks are included. Coordinates are simulated, not real tracking. xG is a transparent synthetic probability model, not calibrated to professional football. The simulator currently simplifies restarts and has no offside, fouls/cards, fatigue or substitutions. See the [full methodology and limitations](docs/evaluation/README.md).
 
-- \`GET /api/health\` — health check
-- \`GET /api/match\` — fictional teams, events, precomputed deterministic insight
-- \`GET /api/stats?at=4500\` — historical replay snapshot
-
-## Tests
-
-    python -m pytest api/tests -q
-
-## How the metrics work
-
-Events come from a repeatable seeded simulator. A shot count includes goals; a goal is a separate event kind, so it is counted once. Control share is computed from synthetic **control_seconds** assigned to on-ball events: it is a teaching approximation, **not official possession or real-world tracking**.
-
-The tactical insight compares north-side recovery events with coordinate \`x >= 67\` in the windows [55:00, 65:00) and [65:00, 75:00). Evidence IDs are drawn directly from the stream. No AI-generated statistics or speculative tactical causation are required.
-
-## Roadmap
-
-- [x] Synthetic match generator with fixed seed
-- [x] Deterministic statistics and tested evidence trail
-- [x] Interactive replay and multiple presentation modes
-- [ ] Microsoft Foundry-backed insight and verification agents
-- [ ] Agent-trace instrumentation and reliability evaluation
-- [ ] Azure deployment and anonymous judge access
-- [ ] Two-minute demo, submission package, accessibility review
-
-## Data and licensing
-
-All teams and players are fictional; all events are generated procedurally in this project. No official league marks or broadcasts are used. Do not mistake this demonstration for a live football analytics service.
+This is a hackathon prototype. The demo does not claim predictive accuracy, professional tracking or new Foundry evidence for 11v11 matches.

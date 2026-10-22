@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { generateMatch, atTime, eventsUntil, validateMatch, type Side, type EventLog } from "./footballEngine";
 import {matchStory, placeLabels, shotExplanation, pulse, type Lens} from "./matchAnalysis";
 import { Pause, Play, RotateCcw, FastForward, ShieldCheck, Crosshair, Activity } from "lucide-react";
+import EvidenceExport from "./EvidenceExport";
 const MatchPitch3D=lazy(()=>import("./MatchPitch3D"));
 const mtime=(v:number)=>String(Math.floor(v/60)).padStart(2,"0")+":"+String(Math.floor(v%60)).padStart(2,"0");
 type View="fan"|"analyst"|"player";
@@ -181,6 +182,7 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
           <div className="new-lenses" aria-label="Audience perspective">{(["fan","analyst","club","player"] as Lens[]).map(view=><button key={view} aria-pressed={lens===view} onClick={()=>setLens(view)}>{view[0].toUpperCase()+view.slice(1)}</button>)}</div>
           <h4>{story.headline}</h4><p>{story.text}</p><div className="new-evidence-links">{story.evidence.map(e=><button key={e.id} onClick={()=>seekEvent(e)}>{mtime(e.time)} · {e.type} <small>{e.id}</small></button>)}</div>
           <p className="new-muted">{mtime(time)} recap · {totals.score[0]}–{totals.score[1]} · {totals.shots[0]+totals.shots[1]} shots · {(totals.xg[0]+totals.xg[1]).toFixed(2)} xG. Calculated from events at or before the replay time.</p>
+          <EvidenceExport key={match.matchId} match={match} time={time} view={{lens,team:followTeam,player:selected}}/>
         </section>
         <section className="new-analysis"><div className="new-analysis-heading"><div><span className="new-kicker">CHANCE DEVELOPMENT</span><h3>Shot map & expected goals</h3></div><span className="new-muted">Northport → · ← Southbridge</span></div>
           <div className="new-shot-workspace"><svg viewBox="0 0 360 230" role="img" aria-label="Shots up to the replay time" className="new-shotmap"><rect x="5" y="5" width="350" height="220" rx="3" fill="#153e31" stroke="#5b8169"/><path d="M180 5V225 M5 60H60V170H5 M355 60H300V170H355" fill="none" stroke="#5b8169"/><circle cx="180" cy="115" r="29" fill="none" stroke="#5b8169"/>{pastShots.map(e=>{const goal=visible.some(r=>r.type==="goal"&&r.sourceId===e.id);return <g key={e.id} role="button" tabIndex={0} aria-label={`Inspect shot ${e.id}`} onKeyDown={k=>{if(k.key==="Enter")seekEvent(e)}} onClick={()=>seekEvent(e)} style={{cursor:"pointer"}}><title>{mtime(e.time)} · {((e.shotXg??0)*100).toFixed(1)}% xG{goal?" · Goal":""}</title><circle cx={5+e.x/105*350} cy={5+e.y/68*220} r={3+(e.shotXg??0)*22} fill={e.team===0?"#c6fa65":"#77aaff"} fillOpacity={goal?1:.35} stroke={e.team===0?"#c6fa65":"#77aaff"} strokeWidth={goal?2:1}/></g>})}</svg>

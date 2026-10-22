@@ -32,7 +32,9 @@ jobs:
           node-version: "22"
       - run: npm ci
       - run: node --experimental-strip-types scripts/check-match.mjs
+      - run: npm run test:match -- --holdout
       - run: npm run test:analysis
+      - run: npm run test:evidence
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
@@ -41,3 +43,4 @@ jobs:
         with:
           name: gameplay-browser-review
           path: web/test-results
+

@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test:match": "node --experimental-strip-types scripts/check-match.mjs",
     "test:browser": "node scripts/check-browser.mjs",
-    "test:analysis": "node --experimental-strip-types scripts/check-analysis.mjs"
+    "test:analysis": "node --experimental-strip-types scripts/check-analysis.mjs",
+    "test:evidence": "node --experimental-strip-types scripts/check-evidence.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -27,3 +28,4 @@
     "vite": "^5.4.0"
   }
 }
+
