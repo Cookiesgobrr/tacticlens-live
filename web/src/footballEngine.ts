@@ -10,7 +10,7 @@
 export type Side = 0 | 1;
 export type EventType =
   | "kickoff" | "pass" | "interception" | "tackle"
-  | "shot" | "goal" | "save" | "turnover";
+  | "shot" | "goal" | "save" | "turnover" | "receive" | "loose";
 export type EventLog = {
   id: string; time: number; team: Side; player: number;
   type: EventType; x: number; y: number; text: string;
@@ -31,6 +31,7 @@ export type Timeline = {
   ball: Float32Array;
   owners: Int8Array;
   ballPhases: Uint8Array;
+  speeds: Float32Array; distances: Float32Array;
   events: EventLog[];
   simulation: "deterministic-synthetic-11v11";
 };
@@ -85,6 +86,10 @@ export function generateMatch(seed=2927):Timeline{
   const ball=new Float32Array(frames*3);
   const owners=new Int8Array(frames);
   const ballPhases=new Uint8Array(frames);
+  const speeds=new Float32Array(frames*22);
+  const distances=new Float32Array(frames*22);
+  const travelled=new Float64Array(22);
+  const lastSnapshot=players.map(p=>({x:p.x,y:p.y}));
   const events:EventLog[]=[];
   const log=(time:number,team:Side,player:number,type:EventType,text:string,extra:Partial<EventLog>={})=>{
     const p=players[player];
@@ -95,7 +100,7 @@ export function generateMatch(seed=2927):Timeline{
   let pauseUntil=2, decisionAt=3.5, goalPause=0, restartSide:Side=0;
   let phase: "kickoff"|"live"|"goal-pause"="kickoff";
   let score:[number,number]=[0,0];
-  let lastOwner=owner;
+  let looseBall=false;
   log(0,0,9,"kickoff","Northport kick off. Both teams set up in 4-3-3.");
   const nearest=(team:Side,x:number,y:number,exclude=-1)=>{
     let best=-1, bd=Infinity;
@@ -107,7 +112,7 @@ export function generateMatch(seed=2927):Timeline{
     return {id:best,distance:bd};
   };
   const beginRestart=(team:Side,now:number)=>{
-    possession=team;owner=team*11+9;lastOwner=owner;
+    possession=team;owner=team*11+9;looseBall=false;
     // Match restart during a stoppage, not an instantaneous live-play teleport.
     for(const p of players){
       p.x=team===0 ? BASE_X[p.id%11] : W-BASE_X[p.id%11];
@@ -121,34 +126,40 @@ export function generateMatch(seed=2927):Timeline{
     phase="kickoff";flight=null;decisionAt=now+3.1;
     log(now,team,owner,"kickoff",(team===0?"Northport":"Southbridge")+" restart with a kick-off.");
   };
+  // A pass targets an actual teammate within 26 metres; the receiving
+  // player must reach the ball, or possession remains loose.
   const makePass=(now:number)=>{
     if(owner<0)return;
-    const p=players[owner],dir=p.team===0?1:-1;
-    const options=players.filter(q=>q.team===p.team&&q.id!==owner&&dist(q.x,q.y,p.x,p.y)>5 &&dist(q.x,q.y,p.x,p.y)<48);
-    if(!options.length){decisionAt=now+1;return;}
+    const from=players[owner], dir=from.team===0?1:-1;
+    const options=players.filter(q=>q.team===from.team&&q.id!==owner
+      &&dist(q.x,q.y,from.x,from.y)>=4
+      &&dist(q.x,q.y,from.x,from.y)<=26);
+    if(!options.length){decisionAt=now+1.2;return;}
     const ranked=options.map(q=>{
-      const d=dist(p.x,p.y,q.x,q.y);
-      const ahead=(q.x-p.x)*dir;
-      const mark=nearest((1-p.team) as Side,q.x,q.y).distance;
-      // Favor angled forward passes to moving teammates with separation.
-      const score=7+ahead*.45-d*.18+Math.min(mark,12)*.8+(rng.next()-.5)*16;
-      return {q,score,d};
+      const d=dist(from.x,from.y,q.x,q.y),ahead=(q.x-from.x)*dir;
+      const open=nearest((1-from.team) as Side,q.x,q.y).distance;
+      let blocked=0;
+      for(const defender of players){
+        if(defender.team===from.team)continue;
+        const t=clamp(((defender.x-from.x)*(q.x-from.x)+(defender.y-from.y)*(q.y-from.y))/(d*d),0,1);
+        const gap=dist(defender.x,defender.y,from.x+(q.x-from.x)*t,from.y+(q.y-from.y)*t);
+        if(t>.08&&t<.94&&gap<3.4)blocked+=6*(3.4-gap)/3.4;
+      }
+      const score=Math.max(0,ahead)*.35+Math.min(open,10)*.35-
+        Math.abs(d-13)*.45-blocked+(rng.next()-.5)*3;
+      return {q,score};
     }).sort((a,b)=>b.score-a.score);
-    const selected=ranked[0].q;
-    const d=ranked[0].d;
-    const nearestDefender=nearest((1-p.team) as Side,selected.x,selected.y).distance;
-    const pressure=nearest((1-p.team) as Side,p.x,p.y).distance;
-    const success=clamp(.87-(d/70)-Math.max(0,4-pressure)*.035-
-      Math.max(0,3-nearestDefender)*.05,.28,.93);
-    const completion=rng.next()<success;
-    const duration=clamp(d/20,.55,2.45);
-    const tx=clamp(selected.x+selected.vx*duration*.3,1,W-1);
-    const ty=clamp(selected.y+selected.vy*duration*.3,1,H-1);
-    flight={type:"pass",team:p.team,from:p.id,receiver:selected.id,start:now,end:now+duration,
-      x0:ballX,y0:ballY,tx,ty,xg:0,goal:completion};
-    owner=-1;possession=p.team;
-    lastOwner=p.id;
-    decisionAt=now+duration+.6;
+    const receiver=ranked[0].q,d=dist(from.x,from.y,receiver.x,receiver.y);
+    const duration=clamp(d/(13+rng.next()*5),.48,1.85);
+    const tx=clamp(receiver.x+receiver.vx*.22,1,W-1);
+    const ty=clamp(receiver.y+receiver.vy*.22,1,H-1);
+    flight={type:"pass",team:from.team,from:from.id,receiver:receiver.id,
+      start:now,end:now+duration,x0:ballX,y0:ballY,tx,ty,xg:0,goal:false};
+    log(now,from.team,from.id,"pass",
+      from.name+" passes toward "+receiver.name+".",
+      {target:receiver.id,distance:+dist(ballX,ballY,tx,ty).toFixed(1)});
+    owner=-1;looseBall=false;possession=from.team;
+    decisionAt=now+duration+.9;
   };
   const makeShot=(now:number)=>{
     if(owner<0)return;
@@ -160,11 +171,13 @@ export function generateMatch(seed=2927):Timeline{
       Math.exp(-angle/36),.012,.42);
     const isGoal=rng.next()<xg;
     const ty=H/2+(rng.next()-.5)*(isGoal?6:19);
-    const shotLength=clamp(distance/27,.35,1.45);
+    const shotLength=clamp(distance/27,.4,1.5);
+    const keeper=players[(1-shooter.team)*11];
     flight={type:"shot",team:shooter.team,from:shooter.id,receiver:-1,
-      start:now,end:now+shotLength,x0:ballX,y0:ballY,tx:goalX,ty,xg,goal:isGoal};
+      start:now,end:now+shotLength,x0:ballX,y0:ballY,
+      tx:isGoal?goalX:keeper.x,ty:isGoal?ty:keeper.y,xg,goal:isGoal};
     log(now,shooter.team,shooter.id,"shot",shooter.name+" shoots ("+xg.toFixed(2)+" xG).",{shotXg:+xg.toFixed(3)});
-    lastOwner=owner;owner=-1;decisionAt=now+shotLength+2;
+    owner=-1;looseBall=false;decisionAt=now+shotLength+2;
     void dir;
   };
   function resolveFlight(now:number){
