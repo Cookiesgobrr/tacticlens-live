@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {generateMatch,eventsUntil} from '../src/footballEngine.ts';
-import {auditEvidenceReport,broadcastVtt,buildEvidenceReport,vttTimestamp} from '../src/evidenceExport.ts';
+import {auditEvidenceReport,broadcastVtt,buildEvidenceReport,vttTimestamp} from '../src/matchEvidence.ts';
 const match=generateMatch(2027);
 const firstShot=match.events.find(e=>e.type==='shot');
 const firstResult=match.events.find(e=>e.sourceId===firstShot.id);

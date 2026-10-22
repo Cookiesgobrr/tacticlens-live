@@ -54,7 +54,7 @@ CI runs the backend tests, both populations, analysis/export checks, TypeScript/
 | `web/src/FootballMatch2D.tsx` | Match controls and time-filtered 2D pitch, score and statistics |
 | `web/src/MatchPitch3D.tsx` | Presentation of the same current frame; no independent simulation |
 | `web/src/matchAnalysis.ts` | Deterministic audience explanations, totals and stat-label placement |
-| `web/src/evidenceExport.ts` | Replay-time report/captions and strict deterministic report audit |
+| `web/src/matchEvidence.ts` | Replay-time report/captions and strict deterministic report audit |
 | `api/`, `LegacyApp.tsx`, `foundry.ts` | Archived dataset, backend evidence gates and cached Foundry demo |
 
 ## Scope and data
