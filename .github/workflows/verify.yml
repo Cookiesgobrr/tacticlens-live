@@ -42,7 +42,16 @@ jobs:
       - run: npm run test:evidence
       - run: npm run test:intelligence
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - name: Prepare browser
+        timeout-minutes: 10
+        run: |
+          browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$browser_path" ]; then
+            "$browser_path" --version
+            echo "CHROMIUM_PATH=$browser_path" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
       - run: npm run test:browser
       - uses: actions/upload-artifact@v4
         if: always()
