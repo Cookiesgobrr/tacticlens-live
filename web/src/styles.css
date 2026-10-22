@@ -276,3 +276,13 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 .new-loglist{max-height:250px;overflow:auto}.new-loglist button{background:transparent;border:0;border-top:1px solid #293e36;width:100%;display:flex;gap:9px;text-align:left;padding:10px 0;color:#e8f2e5;cursor:pointer}.new-loglist button>span{color:#c6fa65;font-size:10px}.new-loglist button>div{display:flex;flex-direction:column;gap:5px}.new-loglist button strong{font-size:10px}.new-loglist button small{font-size:10px;color:#a8c1af}.new-ok{font-size:11px;color:#c6fa65;line-height:1.7}.new-error{font-size:11px;color:#f5b2ab}.new-validation button{width:100%;margin-top:12px}.legacy-return{position:fixed;right:12px;bottom:12px;z-index:8;border:0;border-radius:8px;background:#c6fa65;color:#173022;font-weight:700;padding:10px}
 @media(max-width:900px){.new-layout{grid-template-columns:1fr}.new-sidebar{display:grid;grid-template-columns:1fr 1fr}.new-pitchhead{flex-wrap:wrap}}
 @media(max-width:600px){.new-sidebar{display:flex}.new-scorebar{grid-template-columns:1fr 90px 1fr;padding:10px}.new-score strong{font-size:25px}.new-club{gap:5px}.new-club strong{font-size:10px}.new-club small{font-size:8px}.new-crest{height:30px;width:30px;font-size:14px}.new-topbar-right span,.new-brand small{display:none}.new-mode button{font-size:10px;padding:7px}.new-pitchhead h2{font-size:18px}.new-playback{gap:5px}.new-pitchwrap{margin:0 5px}.new-eventbanner{font-size:9px;left:5px;right:5px;bottom:5px}}
+
+
+.new-view-controls{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.new-stats-toggle{display:flex;align-items:center;gap:7px;color:#c8e9c4;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer}
+.new-stats-toggle input{width:16px;height:16px;accent-color:#c6fa65;cursor:pointer}
+.new-player-stats{margin-top:15px;padding:12px;border:1px solid #416447;border-radius:8px;background:#172b25;display:flex;flex-direction:column;gap:8px}
+.new-player-stats>strong{font-size:13px;color:#e5ffbf;margin-bottom:4px}
+.new-player-stats>div{display:flex;justify-content:space-between;gap:8px;color:#acc6b8;font-size:11px}
+.new-player-stats b{color:#f1fbeb}
+@media(max-width:650px){.new-view-controls{gap:9px}.new-stats-toggle{font-size:10px}}

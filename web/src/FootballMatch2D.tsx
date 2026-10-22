@@ -7,10 +7,11 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   const [seed,setSeed]=useState(2927);
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
-  const [speed,setSpeed]=useState(2);
+  const [speed,setSpeed]=useState(1);
   const [mode,setMode]=useState<View>("fan");
   const [selected,setSelected]=useState(9);
   const [followTeam,setFollowTeam]=useState<Side|2>(2);
+  const [showPlayerStats,setShowPlayerStats]=useState(false);
   const match=useMemo(()=>generateMatch(seed),[seed]);
   const issues=useMemo(()=>validateMatch(match),[match]);
   const current=atTime(match,time);
@@ -20,7 +21,8 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   for(const e of visible)if(e.type==="goal")score[e.team]++;
   const passes:[number,number]=[0,0],completions:[number,number]=[0,0],shots:[number,number]=[0,0],tackles:[number,number]=[0,0];
   for(const e of visible){
-    if(e.type==="pass"){passes[e.team]++;if(e.completed)completions[e.team]++;}
+    if(e.type==="pass") passes[e.team]++;
+    if(e.type==="receive")completions[e.team]++;
     if(e.type==="shot")shots[e.team]++;
     if(e.type==="tackle"||e.type==="interception")tackles[e.team]++;
   }
@@ -41,6 +43,17 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   const py=(v:number)=>20+v/68*620;
   const x=px(current.ball.x),y=py(current.ball.y);
   const nearest=match.players.find(p=>p.id===current.owner);
+  const individual=match.players.map(p=>{
+    const own=visible.filter(e=>e.player===p.id);
+    const attempted=own.filter(e=>e.type==="pass").length;
+    const completed=visible.filter(e=>e.type==="receive"&&e.target===p.id).length;
+    const receipts=own.filter(e=>e.type==="receive").length;
+    const wins=own.filter(e=>e.type==="interception"||e.type==="tackle").length;
+    const shots=own.filter(e=>e.type==="shot").length;
+    const goals=own.filter(e=>e.type==="goal").length;
+    return {attempted,completed,receipts,wins,shots,goals,
+      speed:current.speed[p.id]??0,distance:current.distance[p.id]??0};
+  });
   const last=visible.at(-1);
   return <div className="new-match">
     <div className="new-topbar">
@@ -58,7 +71,10 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
         <div className="new-pitchhead">
           <div><span className="new-kicker"><Activity size={13}/> MATCH ENGINE</span><h2>Live 2D match</h2>
             <p>22 active players · Coordinated movement · Simulated possession and play</p></div>
-          <div className="new-mode"><button className={mode==="fan"?"chosen":""} onClick={()=>setMode("fan")}>Match</button><button className={mode==="analyst"?"chosen":""} onClick={()=>setMode("analyst")}>Tactical</button><button className={mode==="player"?"chosen":""} onClick={()=>setMode("player")}>Player focus</button></div>
+          <div className="new-view-controls">
+            <label className="new-stats-toggle"><input type="checkbox" checked={showPlayerStats}
+              onChange={e=>setShowPlayerStats(e.target.checked)}/> Player stats</label>
+          <div className="new-mode"><button className={mode==="fan"?"chosen":""} onClick={()=>setMode("fan")}>Match</button><button className={mode==="analyst"?"chosen":""} onClick={()=>setMode("analyst")}>Tactical</button><button className={mode==="player"?"chosen":""} onClick={()=>setMode("player")}>Player focus</button></div></div>
         </div>
         <div className="new-pitchwrap">
           <svg className="new-pitch" viewBox="0 0 1000 660" role="img" aria-label="Interactive two dimensional 11 versus 11 football match">
@@ -79,11 +95,18 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
               const pt=current.people[i],isSelected=p.id===selected;
               const isOwner=p.id===current.owner;
               const isMuted=followTeam!==2&&p.team!==followTeam;
+              const detail=individual[p.id];
               return <g key={p.id} onClick={()=>{setSelected(p.id);setMode("player")}} style={{cursor:"pointer"}} opacity={isMuted?.45:1}>
                 {isSelected && <circle cx={px(pt.x)} cy={py(pt.y)} r="21" fill="none" stroke="#ffef9b" strokeWidth="2.8"/>}
                 {isOwner && <circle cx={px(pt.x)} cy={py(pt.y)} r="17" stroke="white" strokeWidth="1.5" opacity=".75" fill="none"/>}
                 <circle cx={px(pt.x)} cy={py(pt.y)} r={p.role==="GK"?12:11.5} fill={p.team===0?"#c6fa65":"#77aaff"} stroke={p.team===0?"#0d2d1c":"#0b2236"} strokeWidth="2"/>
                 <text x={px(pt.x)} y={py(pt.y)+3.9} fill="#0a1515" textAnchor="middle" fontSize="11" fontWeight="800">{p.number}</text>
+                {showPlayerStats && <g pointerEvents="none" transform={`translate(${px(pt.x)+15} ${py(pt.y)-(p.id%3)*12-35})`}>
+                  <rect x="0" y="-3" width="89" height="38" rx="5" fill="#081e1ced" stroke={p.team===0?"#c6fa65":"#77aaff"} strokeOpacity=".72"/>
+                  <text x="6" y="10" fill="#ecf9ef" fontSize="9" fontWeight="700">#{p.number} {p.role} · {(detail.speed*3.6).toFixed(0)} km/h</text>
+                  <text x="6" y="22" fill="#c6fa65" fontSize="8.5">PASS {detail.completed}/{detail.attempted}</text>
+                  <text x="6" y="32" fill="#b9d5c2" fontSize="8">WIN {detail.wins} · {(detail.distance/1000).toFixed(2)} km</text>
+                </g>}
                 {(mode==="analyst"||(mode==="player"&&isSelected))&&
                   <text x={px(pt.x)} y={py(pt.y)-20} fill="#f1ffea" textAnchor="middle" fontSize="10" fontWeight="600">{p.name}</text>}
               </g>;
@@ -112,7 +135,16 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
           <label>Track a player<select value={selected} onChange={e=>{setSelected(+e.target.value);setMode("player")}}>
             {match.players.map(p=><option key={p.id} value={p.id}>{p.team===0?"NOR":"SOU"} · #{p.number} {p.name} ({p.role})</option>)}
           </select></label>
-          <p className="new-muted">Select anyone on the pitch to track their contribution.</p></section>
+          <p className="new-muted">Select anyone on the pitch to track their contribution.</p>
+          <div className="new-player-stats">
+            <strong>#{match.players[selected].number} {match.players[selected].name}</strong>
+            <div><span>Pass completion</span><b>{individual[selected].completed}/{individual[selected].attempted}</b></div>
+            <div><span>Receptions</span><b>{individual[selected].receipts}</b></div>
+            <div><span>Recoveries / tackles</span><b>{individual[selected].wins}</b></div>
+            <div><span>Shots / goals</span><b>{individual[selected].shots} / {individual[selected].goals}</b></div>
+            <div><span>Modeled speed</span><b>{(individual[selected].speed*3.6).toFixed(1)} km/h</b></div>
+            <div><span>Modeled distance</span><b>{(individual[selected].distance/1000).toFixed(2)} km</b></div>
+          </div></section>
         <section className="new-card"><span className="new-kicker">LIVE STATISTICS</span><h3>Match pulse</h3>
           <div className="new-statrow"><span>Completed passes</span><strong>{completions[0]} – {completions[1]}</strong></div>
           <div className="new-statrow"><span>Attempts</span><strong>{passes[0]} – {passes[1]}</strong></div>
