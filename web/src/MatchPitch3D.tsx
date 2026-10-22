@@ -99,14 +99,18 @@ export default function MatchPitch3D(props:Props){
     renderer.domElement.addEventListener('click',onClick);
     const onLost=(event:Event)=>{event.preventDefault();latest.current.onUnavailable();};renderer.domElement.addEventListener('webglcontextlost',onLost);
     const resize=new ResizeObserver(()=>{const w=node.clientWidth,h=node.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();});resize.observe(node);
-    const aim=new THREE.Vector3(),look=new THREE.Vector3(),cameraTarget=new THREE.Vector3();let raf=0,lastWall=performance.now(),lastTime=-1,lastMode='',lastFlip=props.flipped,lastReset=props.reset;
+    const aim=new THREE.Vector3(),look=new THREE.Vector3(),cameraTarget=new THREE.Vector3();let raf=0,lastWall=performance.now(),lastTime=-1,lastMode='',lastFlip=props.flipped,lastReset=props.reset,lastActionId='';
     const actions=props.match.events,direction=new THREE.Vector3();
     const render=(wall:number)=>{
       const state=latest.current,{frame,time,selected}=state;
       const dt=Math.min(.06,Math.max(0,(wall-lastWall)/1000));
-      const snap=Math.abs(time-lastTime)>2||time<lastTime||state.camera!==lastMode||state.flipped!==lastFlip||state.reset!==lastReset||lastTime<0;
+
       let lo=0,hi=actions.length;while(lo<hi){const m=(lo+hi)>>1;if(actions[m].time<=time)lo=m+1;else hi=m;}
       const action=actions[lo-1],next=actions[lo];
+      // A stoppage restart is an intentional broadcast cut: the source positions
+      // reset there, so damping from the old goal would briefly lose the ball.
+      const restartCut=action?.id!==lastActionId&&(action?.type==='kickoff'||action?.type==='restart');
+      const snap=restartCut||Math.abs(time-lastTime)>2||time<lastTime||state.camera!==lastMode||state.flipped!==lastFlip||state.reset!==lastReset||lastTime<0;
       for(let i=0;i<22;i++){
         const actor=actors[i],p=frame.people[i];const old=actor.root.position.clone();
         actor.root.position.copy(world(p.x,p.y));
@@ -150,7 +154,7 @@ export default function MatchPitch3D(props:Props){
       renderer.render(scene,camera);
       // Read back actual mesh coordinates for parity diagnostics in browser CI.
       renderer.domElement.dataset.renderedFrame=JSON.stringify({people:actors.map(a=>({x:a.root.position.x+52.5,y:a.root.position.z+34})),ball:{x:ball.position.x+52.5,y:ball.position.z+34,z:ball.position.y},time});
-      lastWall=wall;lastTime=time;lastMode=state.camera;lastFlip=state.flipped;lastReset=state.reset;raf=requestAnimationFrame(render);
+      lastWall=wall;lastTime=time;lastMode=state.camera;lastFlip=state.flipped;lastReset=state.reset;lastActionId=action?.id??'';raf=requestAnimationFrame(render);
     };
     raf=requestAnimationFrame(render);
     return()=>{

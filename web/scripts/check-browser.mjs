@@ -98,6 +98,9 @@ try{
   await page.getByRole('button',{name:'Reset camera',exact:true}).click();
   await timeline.fill('4678');await page.getByRole('button',{name:'Play',exact:true}).click();
   for(let k=0;k<12;k++){await page.waitForTimeout(250);const c=JSON.parse(await canvas.getAttribute('data-camera'));assert.ok(Math.abs(c.ballNdc[0])<.95&&Math.abs(c.ballNdc[1])<.95,'Moving shot stays framed');}
+  await page.getByRole('button',{name:'Pause',exact:true}).click();
+  await timeline.fill('4687.75');await page.getByRole('button',{name:'Play',exact:true}).click();
+  for(let k=0;k<12;k++){await page.waitForTimeout(100);const c=JSON.parse(await canvas.getAttribute('data-camera'));assert.ok(Math.abs(c.ballNdc[0])<.95&&Math.abs(c.ballNdc[1])<.95,'Restart cut must keep the source ball framed');}
   await page.getByRole('button',{name:'Pause',exact:true}).click();await timeline.fill('2700');
   await page.screenshot({path:new URL('../test-results/3d-broadcast.png',import.meta.url).pathname,fullPage:true});
   for(const camera of ['tactical','player']){
