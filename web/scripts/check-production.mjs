@@ -8,7 +8,7 @@ const directory=new URL('../test-results/production/',import.meta.url).pathname;
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']}: {})});
 const context=await browser.newContext({viewport:{width:1440,height:1000},...(record?{recordVideo:{dir:directory,size:{width:1440,height:1000}}}:{})});
 const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
-const linger=async ms=>{if(record)await page.waitForTimeout(ms)},showPitch=()=>page.locator('.new-pitchwrap').scrollIntoViewIfNeeded();
+const linger=async ms=>{if(record)await page.waitForTimeout(ms)},showPitch=()=>page.evaluate(()=>document.querySelector('.new-scorebar').scrollIntoView({behavior:'instant',block:'start'}));
 try{
   await page.goto(target+'?seed=82');const canvas=page.locator('.new-pitch3d canvas');await canvas.waitFor();
   const timeline=page.getByRole('slider',{name:'Match timeline'});
@@ -21,6 +21,7 @@ try{
     const clock=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
     await page.getByRole('button',{name:`Replay Goal · ${label} at ${clock}`,exact:true}).click();await showPitch();
     assert.ok(+(await timeline.inputValue())<t,'Highlight starts before outcome');
+    const scoreBounds=await page.locator('.new-scorebar').boundingBox();assert.ok(scoreBounds.y>=-1&&scoreBounds.y+scoreBounds.height<=1000,'Replay keeps the entire scorebug visible');
     await page.waitForFunction(t=>Number(document.querySelector('input[aria-label="Match timeline"]').value)>=t+.35,t);
     await page.getByRole('button',{name:'Pause',exact:true}).click();
     assert.ok((await page.locator('.new-score').innerText()).includes(score));await linger(2000);
