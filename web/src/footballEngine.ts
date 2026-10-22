@@ -16,6 +16,7 @@ export type EventLog = {
   type: EventType; x: number; y: number; text: string;
   target?: number; completed?: boolean; distance?: number;
   shotXg?: number;
+  shotDistance?: number; shotAngle?: number; shotPressure?: number;
 };
 export type Footballer = {
   id: number; team: Side; number: number; name: string; role: string;
@@ -42,6 +43,17 @@ const W = 105, H = 68;
 const lerp = (a:number,b:number,t:number) => a+(b-a)*t;
 const clamp = (v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 const dist = (x:number,y:number,a:number,b:number)=>Math.hypot(x-a,y-b);
+/**
+ * Simplified synthetic expected-goals model. Its output is a transparent
+ * probability for OUR SIMULATOR, not a calibrated professional xG provider.
+ */
+export function goalProbability(distanceM:number,angleRadians:number,defenderM:number):number {
+  const distanceFactor=Math.exp(-Math.max(0,distanceM-6)/19);
+  const angleFactor=clamp(Math.cos(angleRadians),.35,1);
+  const pressureFactor=clamp(.62+defenderM*.11,.52,1);
+  return clamp(.57*distanceFactor*angleFactor*pressureFactor,.016,.62);
+}
+
 const ROLE = ["GK","LB","LCB","RCB","RB","LCM","CM","RCM","LW","ST","RW"];
 const NUMBERS = [1,3,4,5,2,8,6,10,11,9,7];
 const NAMES = [
@@ -101,6 +113,8 @@ export function generateMatch(seed=2927):Timeline{
   let phase: "kickoff"|"live"|"goal-pause"="kickoff";
   let score:[number,number]=[0,0];
   let looseBall=false;
+  let buildUp=0;
+  let lastShotAt=-40;
   log(0,0,9,"kickoff","Northport kick off. Both teams set up in 4-3-3.");
   const nearest=(team:Side,x:number,y:number,exclude=-1)=>{
     let best=-1, bd=Infinity;
@@ -112,7 +126,7 @@ export function generateMatch(seed=2927):Timeline{
     return {id:best,distance:bd};
   };
   const beginRestart=(team:Side,now:number)=>{
-    possession=team;owner=team*11+9;looseBall=false;
+    possession=team;owner=team*11+9;looseBall=false;buildUp=0;
     // Match restart during a stoppage, not an instantaneous live-play teleport.
     for(const p of players){
       p.x=team===0 ? BASE_X[p.id%11] : W-BASE_X[p.id%11];
@@ -159,32 +173,37 @@ export function generateMatch(seed=2927):Timeline{
       from.name+" passes toward "+receiver.name+".",
       {target:receiver.id,distance:+dist(ballX,ballY,tx,ty).toFixed(1)});
     owner=-1;looseBall=false;possession=from.team;
-    decisionAt=now+duration+.9;
+    decisionAt=now+duration+1.6;
   };
   const makeShot=(now:number)=>{
     if(owner<0)return;
-    const shooter=players[owner], dir=shooter.team===0?1:-1;
+    const shooter=players[owner];
     const goalX=shooter.team===0?W:0;
     const distance=dist(shooter.x,shooter.y,goalX,H/2);
-    const angle=Math.abs(shooter.y-H/2);
-    const xg=clamp(.47*Math.exp(-Math.max(0,distance-8)/20)*
-      Math.exp(-angle/36),.012,.42);
+    const angle=Math.atan2(Math.abs(shooter.y-H/2),Math.max(1,Math.abs(goalX-shooter.x)));
+    const pressure=nearest((1-shooter.team) as Side,shooter.x,shooter.y).distance;
+    const xg=goalProbability(distance,angle,pressure);
+    // The goal event is derived from this exact logged shot probability.
     const isGoal=rng.next()<xg;
-    const ty=H/2+(rng.next()-.5)*(isGoal?6:19);
-    const shotLength=clamp(distance/27,.4,1.5);
+    const ty=H/2+(rng.next()-.5)*(isGoal?6:8);
+    const shotLength=clamp(distance/26,.45,1.6);
     const keeper=players[(1-shooter.team)*11];
     flight={type:"shot",team:shooter.team,from:shooter.id,receiver:-1,
       start:now,end:now+shotLength,x0:ballX,y0:ballY,
       tx:isGoal?goalX:keeper.x,ty:isGoal?ty:keeper.y,xg,goal:isGoal};
-    log(now,shooter.team,shooter.id,"shot",shooter.name+" shoots ("+xg.toFixed(2)+" xG).",{shotXg:+xg.toFixed(3)});
+    log(now,shooter.team,shooter.id,"shot",shooter.name+" shoots — "+Math.round(xg*100)+"% goal probability.",
+      {shotXg:+xg.toFixed(4),shotDistance:+distance.toFixed(1),
+       shotAngle:+(angle*180/Math.PI).toFixed(1),shotPressure:+pressure.toFixed(1)});
     owner=-1;looseBall=false;decisionAt=now+shotLength+2;
-    void dir;
+    lastShotAt=now;buildUp=0;
   };
   const takeLoose=(now:number)=>{
     const candidates=players.map(p=>({p,d:dist(p.x,p.y,ballX,ballY)}))
       .filter(v=>v.d<1.4).sort((a,b)=>a.d-b.d);
     if(!candidates.length)return;
+    const prior=possession;
     owner=candidates[0].p.id;possession=players[owner].team;looseBall=false;
+    buildUp=possession===prior?Math.min(buildUp+1,8):0;
     ballX=players[owner].x;ballY=players[owner].y;
     log(now,possession,owner,"interception",players[owner].name+" collects the loose ball.");
     decisionAt=now+1.4;
@@ -199,7 +218,7 @@ export function generateMatch(seed=2927):Timeline{
         log(now,item.team,item.from,"goal",players[item.from].name+" scores!");
         goalPause=now+3;phase="goal-pause";restartSide=(1-item.team) as Side;
       }else{
-        owner=(1-item.team)*11;possession=(1-item.team) as Side;
+        owner=(1-item.team)*11;possession=(1-item.team) as Side;buildUp=0;
         const keeper=players[owner];ballX=keeper.x;ballY=keeper.y;
         log(now,possession,owner,"save",keeper.name+" gathers the shot.");
         decisionAt=now+1.5;
@@ -209,19 +228,19 @@ export function generateMatch(seed=2927):Timeline{
     const receiver=players[item.receiver],defender=nearest((1-item.team) as Side,item.tx,item.ty);
     const receivingDistance=dist(receiver.x,receiver.y,item.tx,item.ty);
     if(receivingDistance<2.2&&(receivingDistance<defender.distance||defender.distance>1.4)){
-      owner=receiver.id;possession=item.team;
+      owner=receiver.id;possession=item.team;buildUp=Math.min(buildUp+1,9);
       ballX=receiver.x;ballY=receiver.y;
       log(now,item.team,receiver.id,"receive",receiver.name+" receives the pass.",
         {target:item.from,completed:true,distance:+dist(item.x0,item.y0,item.tx,item.ty).toFixed(1)});
     }else if(defender.distance<1.4){
-      owner=defender.id;possession=(1-item.team) as Side;
+      owner=defender.id;possession=(1-item.team) as Side;buildUp=0;
       ballX=players[owner].x;ballY=players[owner].y;
       log(now,possession,owner,"interception",players[owner].name+" intercepts the pass.");
     }else{
       owner=-1;looseBall=true;
       log(now,item.team,item.from,"loose",players[item.from].name+"'s pass is loose.");
     }
-    decisionAt=now+1.4;
+    decisionAt=now+2.7+rng.next()*1.0;
   }
   function simulateMovement(time:number){
     for(const p of players){
@@ -233,8 +252,15 @@ export function generateMatch(seed=2927):Timeline{
       const isAttacking=p.team===possession;
       const intendedReceiver=flight?.type==="pass" ? flight.receiver : -1;
       let tx=p.anchorX,ty=p.anchorY;
-      const shift=clamp((ballX-W/2)*.40,-18,18);
-      tx=clamp(tx+shift+(isAttacking?dir*3:-dir*2),2,W-2);
+      const shift=clamp((ballX-W/2)*.56,-24,24);
+      const finalThirdAdvance=clamp(buildUp*3.3,0,27);
+      // Build-up phases pull attackers toward the final third while
+      // defenders fall into a compact block. Formation roles remain distinct.
+      const role=p.id%11;
+      const support=role>=8?1:role>=5?.82:role===0?0:.46;
+      const attackShift=isAttacking?dir*(4+finalThirdAdvance*support):
+        -dir*(2+Math.max(0,finalThirdAdvance-6)*.25);
+      tx=clamp(tx+shift+attackShift,2,W-2);
       ty=clamp(ty+(ballY-p.anchorY)*.17,2,H-2);
       const dBall=dist(p.x,p.y,ballX,ballY);
       if(p.id%11===0){
@@ -323,7 +349,7 @@ export function generateMatch(seed=2927):Timeline{
       const tackler=players[pressure.id];
       log(now,tackler.team,tackler.id,"tackle",
         tackler.name+" tackles "+p.name+".");
-      owner=tackler.id;possession=tackler.team;
+      owner=tackler.id;possession=tackler.team;buildUp=0;
       ballX=tackler.x;ballY=tackler.y;looseBall=false;
       decisionAt=now+1.5;
       return;
@@ -331,7 +357,14 @@ export function generateMatch(seed=2927):Timeline{
     if(now>=decisionAt){
       const goalX=possession===0?W:0;
       const range=dist(p.x,p.y,goalX,H/2);
-      if(range<31 && (rng.next()<.58||range<19)){
+      // Shoot in credible ranges; avoid endless sideways passes. Short
+      // dribbles improve the angle before releasing a higher-value chance.
+      const canShoot=range<38 && Math.abs(p.y-H/2)<28;
+      const shotUrgency=canShoot?
+        clamp(.18+(38-range)*.018+Math.max(0,buildUp-3)*.03,.18,.85):0;
+      if(canShoot && now-lastShotAt>4 && rng.next()<shotUrgency){
+        makeShot(now);
+      }else if(canShoot && range<17 && now-lastShotAt>4){
         makeShot(now);
       }else{
         makePass(now);

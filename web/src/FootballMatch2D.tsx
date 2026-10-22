@@ -19,11 +19,11 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   const recent=visible.slice(-8).reverse();
   const score:[number,number]=[0,0];
   for(const e of visible)if(e.type==="goal")score[e.team]++;
-  const passes:[number,number]=[0,0],completions:[number,number]=[0,0],shots:[number,number]=[0,0],tackles:[number,number]=[0,0];
+  const passes:[number,number]=[0,0],completions:[number,number]=[0,0],shots:[number,number]=[0,0],tackles:[number,number]=[0,0],expectedGoals:[number,number]=[0,0];
   for(const e of visible){
     if(e.type==="pass") passes[e.team]++;
     if(e.type==="receive")completions[e.team]++;
-    if(e.type==="shot")shots[e.team]++;
+    if(e.type==="shot"){shots[e.team]++;expectedGoals[e.team]+=e.shotXg??0;}
     if(e.type==="tackle"||e.type==="interception")tackles[e.team]++;
   }
   useEffect(()=>{
@@ -55,6 +55,8 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
       speed:current.speed[p.id]??0,distance:current.distance[p.id]??0};
   });
   const last=visible.at(-1);
+  const lastShot=[...visible].reverse().find(e=>e.type==="shot");
+  const selectedXg=(lastShot?.shotXg??0)*100;
   return <div className="new-match">
     <div className="new-topbar">
       <div className="new-brand"><span>TL</span><strong>TACTICLENS</strong><small>2D MATCH ENGINE / V1</small></div>
@@ -111,6 +113,15 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
                   <text x={px(pt.x)} y={py(pt.y)-20} fill="#f1ffea" textAnchor="middle" fontSize="10" fontWeight="600">{p.name}</text>}
               </g>;
             })}
+            {lastShot && time-lastShot.time<5 && <g pointerEvents="none">
+              <circle cx={px(lastShot.x)} cy={py(lastShot.y)} r={17+selectedXg*.35}
+                fill="none" stroke="#ffd66f" strokeWidth="2" strokeDasharray="5 4" opacity=".8"/>
+              <g transform={`translate(${Math.max(40,Math.min(840,px(lastShot.x)+25))} ${Math.max(35,py(lastShot.y)-44)})`}>
+                <rect width="123" height="42" rx="7" fill="#13251eed" stroke="#e9c76c"/>
+                <text x="8" y="15" fill="#fff2c2" fontSize="10" fontWeight="700">GOAL PROBABILITY</text>
+                <text x="8" y="33" fill="#ffe18a" fontSize="19" fontWeight="800">{selectedXg.toFixed(1)}%</text>
+              </g>
+            </g>}
             <circle cx={x} cy={y} r="5.8" fill="#fff" stroke="#182c2a" strokeWidth="2.3"/>
             {current.phase===1&&<circle cx={x} cy={y} r="11" stroke="#a6e4fa" opacity=".7" fill="none"/>}
             {current.phase===2&&<circle cx={x} cy={y} r="14" stroke="#ffca7c" opacity=".8" fill="none"/>}
@@ -149,7 +160,21 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
           <div className="new-statrow"><span>Completed passes</span><strong>{completions[0]} – {completions[1]}</strong></div>
           <div className="new-statrow"><span>Attempts</span><strong>{passes[0]} – {passes[1]}</strong></div>
           <div className="new-statrow"><span>Shots</span><strong>{shots[0]} – {shots[1]}</strong></div>
+          <div className="new-statrow"><span>Expected goals (xG)</span><strong>{expectedGoals[0].toFixed(2)} – {expectedGoals[1].toFixed(2)}</strong></div>
+          <div className="new-statrow"><span>Goal conversion</span><strong>{shots[0]?Math.round(score[0]/shots[0]*100):0}% – {shots[1]?Math.round(score[1]/shots[1]*100):0}%</strong></div>
           <div className="new-statrow"><span>Ball recoveries</span><strong>{tackles[0]} – {tackles[1]}</strong></div>
+        </section>
+        <section className="new-card"><span className="new-kicker">CHANCE QUALITY</span><h3>Goal probabilities</h3>
+          <p className="new-muted">Every shot receives a model-derived probability from shot distance, angle and defensive pressure.</p>
+          {lastShot ? <div className="new-player-stats">
+            <strong>{match.players[lastShot.player].name} · {mtime(lastShot.time)}</strong>
+            <div><span>Scoring probability</span><b>{((lastShot.shotXg??0)*100).toFixed(1)}%</b></div>
+            <div><span>Distance</span><b>{lastShot.shotDistance?.toFixed(1) ?? "—"} m</b></div>
+            <div><span>Angle</span><b>{lastShot.shotAngle?.toFixed(1) ?? "—"}°</b></div>
+            <div><span>Defender proximity</span><b>{lastShot.shotPressure?.toFixed(1) ?? "—"} m</b></div>
+            <div><span>Match xG</span><b>{(expectedGoals[0]+expectedGoals[1]).toFixed(2)}</b></div>
+          </div> : <p className="new-muted">Shot probabilities will appear after the first attempt.</p>}
+          <p className="new-muted">Synthetic xG model, not calibrated to real match data.</p>
         </section>
         <section className="new-card new-events"><span className="new-kicker">LIVE EVENT LOG</span><h3>On-pitch actions</h3>
           <div className="new-loglist">{recent.length?recent.map(e=><button key={e.id} onClick={()=>{setTime(e.time);setPlaying(false)}}>

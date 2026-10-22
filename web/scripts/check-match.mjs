@@ -1,7 +1,7 @@
 // Executed in GitHub Actions with Node 22's built-in TypeScript stripping.
 // Ensures the fresh 11-v-11 engine is tested, not just TypeScript compiled.
 import assert from "node:assert/strict";
-import {generateMatch,atTime,eventsUntil,validateMatch} from "../src/footballEngine.ts";
+import {generateMatch,atTime,eventsUntil,validateMatch,goalProbability} from "../src/footballEngine.ts";
 const match=generateMatch();
 assert.deepEqual(validateMatch(match),[]);
 assert.equal(match.players.length,22);
@@ -36,3 +36,18 @@ console.log("Fresh 11v11 simulation checks passed",{
   players:match.players.length,frames:match.frames,
   events:match.events.length,passes:match.events.filter(e=>e.type==="pass").length,
   shots:match.events.filter(e=>e.type==="shot").length});
+
+const shotEvents=match.events.filter(e=>e.type==="shot");
+const goals=match.events.filter(e=>e.type==="goal");
+assert.ok(shotEvents.length>=5,`Expected >=5 chances, got ${shotEvents.length}`);
+assert.ok(shotEvents.every(e=>e.shotXg>0&&e.shotXg<=.62));
+assert.ok(shotEvents.every(e=>e.shotDistance>0&&e.shotAngle>=0));
+assert.ok(goals.length<=shotEvents.length);
+assert.ok(goalProbability(10,0,8)>goalProbability(35,.6,1));
+for(let seed of [2027,110,989]){
+  const simulation=generateMatch(seed);
+  const chances=simulation.events.filter(e=>e.type==="shot");
+  assert.ok(chances.length>=5,`Seed ${seed} only created ${chances.length} shots`);
+  assert.deepEqual(validateMatch(simulation),[]);
+}
+console.log("Shooting/xG calibration", {shots:shotEvents.length,goals:goals.length,xg:shotEvents.reduce((a,e)=>a+e.shotXg,0).toFixed(2)});
