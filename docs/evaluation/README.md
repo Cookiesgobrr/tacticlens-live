@@ -36,3 +36,8 @@ No offsides, fouls, cards, fatigue, substitutions, throw-ins, corners or half-ti
 | Within total xG 1–5 | 100% | 98% |
 
 One seven-goal outlier remains in the calibration set. The holdout shot range is 10–38: neither tail is suppressed. The default seed 2927 ends 0–0 on 2.06 total xG; the prototype does not force a goal for presentation.
+
+
+## Versioned formation evaluation
+
+The published classic 100+100 populations above remain unchanged. The public UI now uses `formations-v2` for other seeds; seed 82 is always routed to its exact classic engine. A separate, predeclared 100-match population (1–50 and 1001–1050) covers all five formation shapes with motion, ownership, event-source and determinism gates. Means: **19.37 shots, 2.13 goals, 2.23695 xG**. [Every row](formations-v2.json) is retained. These are simplified simulation checks, not a real-football validation benchmark. See [version and replay contracts](../BROADCAST_EXPERIENCE.md).

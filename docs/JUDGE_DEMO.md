@@ -1,4 +1,4 @@
-# Judge demo — 1 minute 55 seconds
+# Judge demo — 1 minute 50 seconds
 
 ## Reproducible showcase: Northport 3–2 Southbridge
 
@@ -12,23 +12,26 @@ Open **https://cookiesgobrr.github.io/tacticlens-live/?seed=82**. This is a real
 | 76:25 | Northport 2–2 Southbridge | S. Grant | `SIM-82-01597` | `SIM-82-01596` |
 | 78:00 | Northport 3–2 Southbridge | S. Grant | `SIM-82-01629` | `SIM-82-01628` |
 
-This exact timeline was checked by running the production TypeScript `generateMatch(82)` on GitHub Actions. The goal event IDs and source shot IDs are independently reproducible. The previous judge example `seed=2027` ends 0–1 and should not be used in the final five-goal story.
+This exact timeline was checked by running the production TypeScript `generateMatch(82)` on GitHub Actions. The goal event IDs and source shot IDs are independently reproducible. Use seed 82 for the verified story. Other UI seeds now use formation engine v2 and distinct evidence IDs; their outcomes are not the archived classic-seed examples.
 
-## Recording-ready walkthrough (1:55)
+## Recording-ready walkthrough (1:50)
 
-Use the public seed 82 link above. The UI now defaults to that seed, while the simulation's general-purpose default and calibration remain unchanged. Keep **1×** for a visible four-second shot/goal sequence. “Next AI moment” seeks to four seconds before the next cached moment and plays it; seeking does not change the simulation result.
+Open the public seed 82 link in a 1440×1000 browser. The default is **3D / Broadcast / Low graphics** with a nearby Microsoft Foundry companion. Leave the agent audit collapsed until the proof segment. Use 1× so the ball visibly travels through each source shot. Avoid scrolling the match out of view during the comeback.
 
-| Recording time | Action | Voiceover / claim |
+For a judge demonstration, deliberately enable **Full-match review (reveals results)** under Key moments and choose **Goals**. This exposes the five genuine source-linked goal buttons. Clicking a goal replays from four seconds before its source shot through five seconds after it, using the current renderer/camera. Live-style playback keeps future highlights hidden by default.
+
+| Recording time | Action | Voiceover / supported claim |
 | --- | --- | --- |
-| 0:00–0:12 | Start at kickoff; press Play. | “TacticLens makes football explanations inspectable. Twenty-two fictional players and every statistic share one deterministic match timeline.” |
-| 0:12–0:25 | Toggle 3D, try broadcast/tactical camera. | “The 2D and 3D views render the same recorded coordinates. No separate game or invented tracking data.” |
-| 0:25–0:40 | Show the second goal around **39:03.75** and the **0–2** score. Use Next AI moment from shortly before the goal if needed. | “Southbridge lead two-nil. This is a naturally generated seed, not a scripted score.” |
-| 0:40–0:55 | Show the first Northport goal at **50:10**, then use Next AI moment toward the equalizer. | “Northport begin their comeback. Foundry has precomputed the evidence for these actual SIM-82 moments.” |
-| 0:55–1:10 | Show **76:25.25** (2–2), then **78:00.25** (3–2), playing the last few seconds of the winning shot. | “The equalizer and winner are ninety-five seconds apart. The winner comes from shot SIM-82-01628, followed by goal SIM-82-01629.” |
-| 1:10–1:28 | Scroll to the Foundry card. Switch Fan → Analyst → Club supporter; select Northport, or Player and S. Grant. Expand the agent trace briefly. | “Three real GPT-4.1-mini agents select, independently review and compose the evidence. Code verifies the facts and controls factual wording. Different audiences receive different evidence compositions.” |
-| 1:28–1:40 | Click the winning source shot, then return to the winning moment. | “Every explanation links to its actual replay event and pre-outcome scoring probability. Rewinding before the winner removes that result and its AI card.” |
-| 1:40–1:50 | Advance a few seconds after the goal; export AI moment JSON and AI broadcast VTT from the expanded trace. | “Verified compositions export as source-linked evidence and timed broadcast captions. Viewer interactions make no model calls.” |
-| 1:50–1:55 | Seek to **90:00**, finish on the 3D view / 3–2 scoreboard. | “Twenty-two shots, 2.57 synthetic xG, and an inspectable three-two comeback. Two hundred deterministic matches tested.” |
+| 0:00–0:12 | Play kickoff in the default 3D broadcast. Use Zoom in and Reset camera. | “TacticLens turns a football broadcast into something you can inspect. The camera follows the ball, while every event and statistic shares one deterministic timeline.” |
+| 0:12–0:28 | Enable full-match review, filter Goals, click **0–2 at 39:03**. Let the source shot and goal play. | “Southbridge lead two-nil. This is a naturally simulated result, not a score written for the demo.” |
+| 0:28–0:40 | Replay **1–2 at 50:10**. | “Northport pull one back. Genuine Foundry agents have selected and verified the evidence behind this match.” |
+| 0:40–0:58 | Replay **2–2 at 76:25**, then **3–2 at 78:00**. Keep the broadcast camera on the final shot. | “Two goals ninety-five seconds apart complete the turnaround. The scorer, ball flight, score and explanation all refer to the same events.” |
+| 0:58–1:18 | Switch Fan → Analyst → Club supporter (Southbridge) → Player (S. Grant). | “The same verified facts become different evidence compositions: the fan story, the chance geometry, the opponent's view and the player's contribution. The camera and highlight priorities follow the perspective.” |
+| 1:18–1:32 | Expand the agent trace. Show the three actual executions and export AI JSON / VTT. | “Insight, Verification and Presentation are three separate Microsoft Agent Framework agents using GPT-4.1-mini. Code independently checks facts and controls factual wording. These are real cached executions, not simulated live activity.” |
+| 1:32–1:43 | Click source shot **SIM-82-01628**. Rewind just before the winner; briefly toggle 2D. | “Each explanation links to evidence. Rewind before the winner and both its result and AI card disappear. The 2D and 3D views share the same coordinates.” |
+| 1:43–1:50 | Return to 3D; seek to **90:00** and collapse the audit. | “A three-two comeback, twenty-two shots, 2.57 synthetic xG. Three hundred deterministic matches tested across the original and formation engines. No inference calls while you watch.” |
+
+A reproducible silent capture is available with `cd web && npm run test:production -- --record`. It uses the deployed app, real highlight clicks, camera zoom, perspectives and exports. Add narration/captions and check the resulting duration before upload; do not claim a silent capture is a completed submission.
 
 ### Exact timestamps and recording integrity
 
@@ -44,6 +47,7 @@ Use the public seed 82 link above. The UI now defaults to that seed, while the s
 
 - Live studio: https://cookiesgobrr.github.io/tacticlens-live/?seed=82
 - Repository: https://github.com/Cookiesgobrr/tacticlens-live
+- Broadcast/camera/version contracts: `docs/BROADCAST_EXPERIENCE.md`
 - Engine/evaluation: `web/src/footballEngine.ts`, `docs/evaluation/README.md`
 - Source-event and broadcast exports: `docs/EVIDENCE_EXPORT.md`
 - Foundry boundary: `docs/PUBLIC_FOUNDRY_DASHBOARD.md`

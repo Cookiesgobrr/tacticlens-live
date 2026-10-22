@@ -7,6 +7,8 @@
  * Motion is physically bounded but simplified AI, not measured tracking.
  * No model inference, server requests or external player data.
  */
+import {formationsFor,type Formation,type FormationName} from "./formations.ts";
+export type EngineVersion="classic-v1"|"formations-v2";
 export type Side = 0 | 1;
 export type EventType =
   | "kickoff" | "pass" | "interception" | "tackle"
@@ -27,6 +29,7 @@ export type Footballer = {
 };
 export type Timeline = {
   seed:number; matchId:string;
+  engineVersion:EngineVersion;formations:[FormationName,FormationName];
   players: Pick<Footballer,"id"|"team"|"number"|"name"|"role">[];
   frameSeconds: number;
   duration: number;
@@ -70,12 +73,13 @@ class Random {
   constructor(seed=2927){this.value=seed>>>0;}
   next(){this.value=(Math.imul(this.value,1664525)+1013904223)>>>0;return this.value/4294967296;}
 }
-function makePlayers(): Footballer[] {
+function makePlayers(shapes:[Formation,Formation],varied:boolean): Footballer[] {
   const result:Footballer[]=[];
   for(let team:Side=0;team<=1;team=(team+1) as Side){
     for(let j=0;j<11;j++){
-      let x=team===0?BASE_X[j]:W-BASE_X[j];
-      const y=BASE_Y[j];
+      const shape=shapes[team],baseX=varied?shape.x:BASE_X;
+      let x=team===0?baseX[j]:W-baseX[j];
+      const y=varied&&team===0&&j===9?H/2:shape.y[j];
       // A legal 11-a-side kickoff: Southbridge's attackers remain
       // outside the center circle while Northport's #9 takes kickoff.
       if(team===1 && x<62.7) x=63.5+(j%2)*1.3;
@@ -83,7 +87,7 @@ function makePlayers(): Footballer[] {
       const top=j===0?6.1:j>=8?8.15:7.5;
       result.push({
         id:team*11+j,team,number:NUMBERS[j],name:NAMES[team][j],
-        role:ROLE[j],x,y,vx:0,vy:0,maxSpeed:top+(j%3)*0.18
+        role:varied?shape.roles[j]:ROLE[j],x,y,vx:0,vy:0,maxSpeed:top+(j%3)*0.18
       });
     }
   }
@@ -94,9 +98,12 @@ type Flight = {
   start:number; end:number; x0:number; y0:number; tx:number; ty:number;
   xg:number; outcome:"goal"|"save"|"miss"; sourceId:string;
 };
-export function generateMatch(seed=2927):Timeline{
-  const rng=new Random(seed), players=makePlayers();
-  const matchId="SIM-"+(seed>>>0);
+export function generateMatch(seed=2927,options:{version?:EngineVersion}={}):Timeline{
+  // The published showcase always replays its original authoritative engine.
+  const engineVersion:EngineVersion=(seed>>>0)===82?'classic-v1':options.version??'classic-v1';
+  const varied=engineVersion==='formations-v2',shapes=formationsFor(seed,engineVersion);
+  const rng=new Random(seed), players=makePlayers(shapes,varied);
+  const matchId="SIM-"+(seed>>>0)+(varied?"-F2":"");
   const frames=Math.round(LENGTH/SNAP)+1;
   const positions=new Float32Array(frames*22*2);
   const ball=new Float32Array(frames*3);
@@ -119,7 +126,7 @@ export function generateMatch(seed=2927):Timeline{
 
   let looseBall=false;
 
-  log(0,0,9,"kickoff","Northport kick off. Both teams set up in 4-3-3.");
+  log(0,0,9,"kickoff",varied?`Northport kick off in ${shapes[0].name}; Southbridge set up in ${shapes[1].name}.`:"Northport kick off. Both teams set up in 4-3-3.");
   const nearest=(team:Side,x:number,y:number,exclude=-1)=>{
     let best=-1, bd=Infinity;
     for(const p of players){
@@ -133,10 +140,11 @@ export function generateMatch(seed=2927):Timeline{
     possession=team;owner=team*11+9;looseBall=false;
     // Match restart during a stoppage, not an instantaneous live-play teleport.
     for(const p of players){
-      p.x=p.team===0 ? BASE_X[p.id%11] : W-BASE_X[p.id%11];
-      p.y=BASE_Y[p.id%11];
-      if(p.team===team&&p.id%11===9)p.x=W/2;
-      if(p.team!==team&&p.id%11>=8&&Math.abs(p.x-W/2)<9.3)p.x=team===0?64:41;
+      const shape=shapes[p.team];
+      p.x=p.team===0 ? shape.x[p.id%11] : W-shape.x[p.id%11];
+      p.y=shape.y[p.id%11];
+      if(p.team===team&&p.id%11===9){p.x=W/2;if(varied)p.y=H/2;}
+      if(p.team!==team&&(varied||p.id%11>=8)&&Math.abs(p.x-W/2)<9.3)p.x=team===0?64:41;
       p.vx=0;p.vy=0;
     }
     ballX=W/2;ballY=H/2;ballZ=0.35;
@@ -276,11 +284,15 @@ export function generateMatch(seed=2927):Timeline{
       const mid=clamp(localBall-5,35,78);
       const front=clamp(localBall+17,53,94);
       const defensiveLine=clamp(localBall-10,15,48);
-      const localTarget=isAttacking?
+      const shape=shapes[p.team],band=shape.lines[role];
+      const shapedTarget=isAttacking?
+        band===0?7:band===1?back+(shape.y[role]<15||shape.y[role]>53?5:0):band===2?mid+(shape.roles[role].includes('DM')?-7:shape.roles[role]==='AM'?7:0):front+(shape.roles[role].includes('ST')?2:-3):
+        band===0?7:band===1?defensiveLine:band===2?clamp(localBall+3,27,61):clamp(localBall+18,43,80);
+      const localTarget=varied?shapedTarget:isAttacking?
         role===0?7:role<=4?back+((role===1||role===4)?5:0):role<=7?mid+(role===6?-5:2):front+(role===9?2:-3):
         role===0?7:role<=4?defensiveLine:role<=7?clamp(localBall+3,27,61):clamp(localBall+18,43,80);
       let tx=p.team===0?localTarget:W-localTarget;
-      const lane=isAttacking?BASE_Y[role]:[34,14,27,41,54,24,34,44,20,34,48][role];
+      const lane=varied?(isAttacking?shape.y[role]:H/2+(shape.y[role]-H/2)*.65):isAttacking?BASE_Y[role]:[34,14,27,41,54,24,34,44,20,34,48][role];
       let ty=clamp(lane+(ballY-H/2)*(isAttacking?.12:.28),3,H-3);
       const dBall=dist(p.x,p.y,ballX,ballY);
       if(role===0){
@@ -427,7 +439,7 @@ export function generateMatch(seed=2927):Timeline{
       ballPhases[j]=phaseCode();
     }
   }
-  return {seed,matchId,players:players.map(({id,team,number,name,role})=>({id,team,number,name,role})),
+  return {seed,matchId,engineVersion,formations:[shapes[0].name,shapes[1].name],players:players.map(({id,team,number,name,role})=>({id,team,number,name,role})),
     frameSeconds:SNAP,duration:LENGTH,frames,positions,ball,owners,ballPhases,
     events,speeds,distances,simulation:"deterministic-synthetic-11v11"};
 }
@@ -512,3 +524,4 @@ export function validateMatch(match:Timeline):string[]{
   }
   return [...failures];
 }
+

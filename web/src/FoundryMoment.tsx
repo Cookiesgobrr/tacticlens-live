@@ -19,6 +19,17 @@ export function useVerifiedMatchAI(match:Timeline){
   return feed.matchId===match.matchId?feed:{matchId:match.matchId,pack:null,state:'loading'};
 }
 
+/** Event-derived UI heading, separate from the agents' cached evidence composition. */
+export function momentHeadline(card:AICard,match:Timeline){
+  const c=card.moment.checks;
+  if(card.moment.atSecond===5400)return 'The full-time verdict';
+  if(card.moment.atSecond===2700)return 'The story at half-time';
+  const goal=match.events.find(e=>e.id===c.goalId&&e.time===card.moment.atSecond);
+  if(!goal)return ANGLES[card.angle];
+  const club=goal.team===0?'Northport':'Southbridge',own=c.score[goal.team],other=c.score[1-goal.team];
+  return own===other?`${club} draw level`:own<other?`${club} pull one back`:own+other===1?`${club} strike first`:own-other===1?`${club} take the lead`:`${club} extend the lead`;
+}
+
 export default function FoundryMoment({card,pack,audience,match,time,onSeek,onReplay}:{card:AICard;pack:AIPack;audience:Audience;match:Timeline;time:number;onSeek:(e:EventLog)=>void;onReplay:(e:EventLog)=>void}){
   const claims=card.modes[audience].map(id=>card.moment.claims.find(c=>c.id===id)!);
   const ids=[...new Set(claims.flatMap(c=>c.evidenceIds))];
@@ -35,7 +46,7 @@ export default function FoundryMoment({card,pack,audience,match,time,onSeek,onRe
   }
   return <div className="new-foundry-moment" data-testid="foundry-moment" data-moment-time={card.moment.atSecond}>
     <div className="new-ai-context"><span>{label}</span><span>Evidence at {matchClock(card.moment.atSecond)}</span></div>
-    <h4>{ANGLES[card.angle]}</h4><p className="ai-narrative">{aiText(card,audience)}</p>
+    <h4 title="Event-derived headline; narrative evidence selected by Foundry">{momentHeadline(card,match)}</h4><p className="ai-narrative">{aiText(card,audience)}</p>
     <div className="ai-metrics"><span><b>{card.moment.checks.score.join('–')}</b> Score</span><span><b>{card.moment.checks.shots.reduce((a,b)=>a+b,0)}</b> Shots</span><span><b>{card.moment.checks.xg.reduce((a,b)=>a+b,0).toFixed(2)}</b> xG</span></div>
     <button className="replay-insight" onClick={()=>onReplay(match.events.find(e=>e.id===(card.moment.checks.goalId??card.moment.checks.shotId??ids.at(-1)))!)}>Replay this evidence ↗</button>
     <div className="new-evidence-links">{primary.map(id=>{const e=match.events.find(e=>e.id===id)!;return <button key={id} onClick={()=>onSeek(e)}>{matchClock(e.time)} · {e.type}<small>{id}</small></button>})}</div>

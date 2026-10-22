@@ -39,4 +39,13 @@ for(const value of [null,{},'report',{...report,view:null},{...report,asOfSecond
 for(const time of [NaN,-1,5401,Infinity])assert.throws(()=>buildEvidenceReport(match,time),RangeError);
 assert.equal(vttTimestamp(59.9996),'00:01:00.000');
 assert.equal(vttTimestamp(5400),'01:30:00.000');
+// The published classic v1 format keeps its original provenance contract.
+assert.equal(report.schemaVersion,'tacticlens.evidence.v1');
+assert.deepEqual(Object.keys(report.provenance).sort(),['simulation','narrativeProvider','probabilityModel','realWorldCalibrated','foundryEvidence'].sort());
+const formationMatch=generateMatch(2027,{version:'formations-v2'}),formationReport=buildEvidenceReport(formationMatch,2700);
+assert.equal(formationReport.schemaVersion,'tacticlens.evidence.v2');
+assert.equal(formationReport.provenance.engineVersion,'formations-v2');
+assert.deepEqual(auditEvidenceReport(formationMatch,JSON.parse(JSON.stringify(formationReport))),[]);
+const wrongVersion=structuredClone(formationReport);wrongVersion.provenance.engineVersion='classic-v1';
+assert.ok(auditEvidenceReport(formationMatch,wrongVersion).includes('Evidence mismatch: provenance'));
 console.log('Evidence export gates passed: exact replay prefix, cue timing, provenance, JSON/VTT and fabricated/future/cross-match mutations.');
