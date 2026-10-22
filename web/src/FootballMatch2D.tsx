@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { generateMatch, atTime, eventsUntil, validateMatch, type Side, type EventLog } from "./footballEngine";
+import { generateMatch, atTime, eventsUntil, validateMatch, type Side } from "./footballEngine";
 import { Pause, Play, RotateCcw, FastForward, ShieldCheck, Crosshair, Activity } from "lucide-react";
 const mtime=(v:number)=>String(Math.floor(v/60)).padStart(2,"0")+":"+String(Math.floor(v%60)).padStart(2,"0");
 type View="fan"|"analyst"|"player";
