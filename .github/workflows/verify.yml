@@ -36,6 +36,7 @@ jobs:
       - run: npm ci
       - run: node --experimental-strip-types scripts/check-match.mjs
       - run: npm run test:match -- --holdout
+      - run: npm run test:camera
       - run: npm run test:analysis
       - run: npm run test:evidence
       - run: npm run test:intelligence
