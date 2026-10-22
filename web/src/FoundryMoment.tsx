@@ -19,7 +19,7 @@ export function useVerifiedMatchAI(match:Timeline){
   return feed.matchId===match.matchId?feed:{matchId:match.matchId,pack:null,state:'loading'};
 }
 
-export default function FoundryMoment({card,pack,audience,match,time,onSeek}:{card:AICard;pack:AIPack;audience:Audience;match:Timeline;time:number;onSeek:(e:EventLog)=>void}){
+export default function FoundryMoment({card,pack,audience,match,time,onSeek,onReplay}:{card:AICard;pack:AIPack;audience:Audience;match:Timeline;time:number;onSeek:(e:EventLog)=>void;onReplay:(e:EventLog)=>void}){
   const claims=card.modes[audience].map(id=>card.moment.claims.find(c=>c.id===id)!);
   const ids=[...new Set(claims.flatMap(c=>c.evidenceIds))];
   const primary=[...new Set([card.moment.checks.shotId,card.moment.checks.goalId,...ids.slice(-4)].filter((s):s is string=>!!s))];
@@ -35,7 +35,9 @@ export default function FoundryMoment({card,pack,audience,match,time,onSeek}:{ca
   }
   return <div className="new-foundry-moment" data-testid="foundry-moment" data-moment-time={card.moment.atSecond}>
     <div className="new-ai-context"><span>{label}</span><span>Evidence at {matchClock(card.moment.atSecond)}</span></div>
-    <h4>{ANGLES[card.angle]}</h4><p>{aiText(card,audience)}</p>
+    <h4>{ANGLES[card.angle]}</h4><p className="ai-narrative">{aiText(card,audience)}</p>
+    <div className="ai-metrics"><span><b>{card.moment.checks.score.join('–')}</b> Score</span><span><b>{card.moment.checks.shots.reduce((a,b)=>a+b,0)}</b> Shots</span><span><b>{card.moment.checks.xg.reduce((a,b)=>a+b,0).toFixed(2)}</b> xG</span></div>
+    <button className="replay-insight" onClick={()=>onReplay(match.events.find(e=>e.id===(card.moment.checks.goalId??card.moment.checks.shotId??ids.at(-1)))!)}>Replay this evidence ↗</button>
     <div className="new-evidence-links">{primary.map(id=>{const e=match.events.find(e=>e.id===id)!;return <button key={id} onClick={()=>onSeek(e)}>{matchClock(e.time)} · {e.type}<small>{id}</small></button>})}</div>
     <p className="new-muted">Precomputed GPT-4.1-mini editorial selection · Factual sentences rendered from verified synthetic events.</p>
     <details className="new-ai-audit"><summary>Agent trace, all evidence & broadcast exports</summary>

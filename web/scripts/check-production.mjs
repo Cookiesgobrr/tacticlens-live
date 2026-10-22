@@ -14,6 +14,8 @@ const linger=async ms=>{if(record)await page.waitForTimeout(ms)};
 const showPitch=()=>page.locator('.new-pitchwrap').scrollIntoViewIfNeeded();
 try{
   await page.goto(target+'?seed=82');
+  await page.locator('.new-pitch3d canvas').waitFor();
+  await page.getByRole('button',{name:'2D pitch',exact:true}).click();
   await page.locator('.new-pitch [data-player-id]').first().waitFor();
   assert.equal(await page.locator('.new-pitch [data-player-id]').count(),22);
   const timeline=page.getByRole('slider',{name:'Match timeline'});
