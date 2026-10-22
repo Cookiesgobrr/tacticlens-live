@@ -31,4 +31,5 @@ jobs:
         with:
           node-version: "22"
       - run: npm install
+      - run: node --experimental-strip-types scripts/check-match.mjs
       - run: npm run build
