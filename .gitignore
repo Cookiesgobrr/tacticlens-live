@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Frontend build and browser test outputs
+node_modules/
+*.tsbuildinfo
+web/test-results/

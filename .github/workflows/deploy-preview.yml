@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
         working-directory: web
       - name: Build static preview
         env:

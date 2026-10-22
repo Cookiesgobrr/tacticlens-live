@@ -1,0 +1,945 @@
+{
+  "summary": {
+    "seeds": "1–100",
+    "matches": 100,
+    "frameSeconds": 0.25,
+    "shots": {
+      "min": 15,
+      "p05": 16,
+      "median": 23,
+      "mean": 23.34,
+      "p95": 31,
+      "max": 33
+    },
+    "goals": {
+      "min": 0,
+      "p05": 0,
+      "median": 2,
+      "mean": 2.07,
+      "p95": 5,
+      "max": 7
+    },
+    "xg": {
+      "min": 1.0949339027921923,
+      "p05": 1.355966606790087,
+      "median": 2.0868905689650368,
+      "mean": 2.1279072286053995,
+      "p95": 2.936546946175548,
+      "max": 3.3851647654514374
+    },
+    "passCompletion": {
+      "min": 0.9106945975744212,
+      "p05": 0.9215909090909091,
+      "median": 0.936026936026936,
+      "mean": 0.9356160367378132,
+      "p95": 0.9489216799091941,
+      "max": 0.958997722095672
+    },
+    "typicalShots": 1,
+    "typicalGoals": 0.99,
+    "typicalXg": 1,
+    "conversionZ": -0.4278338836725637
+  },
+  "rows": [
+    {
+      "seed": 1,
+      "shots": 20,
+      "goals": 4,
+      "xg": 1.9114157333112385,
+      "passes": 878,
+      "completion": 0.9533029612756264,
+      "shotVariance": 1.6377917380721347
+    },
+    {
+      "seed": 2,
+      "shots": 27,
+      "goals": 0,
+      "xg": 1.9663696275961295,
+      "passes": 866,
+      "completion": 0.941108545034642,
+      "shotVariance": 1.7919950107195168
+    },
+    {
+      "seed": 3,
+      "shots": 23,
+      "goals": 1,
+      "xg": 1.6076706407658,
+      "passes": 879,
+      "completion": 0.9419795221843004,
+      "shotVariance": 1.4625883272256501
+    },
+    {
+      "seed": 4,
+      "shots": 24,
+      "goals": 1,
+      "xg": 2.0622359584457204,
+      "passes": 883,
+      "completion": 0.9331823329558324,
+      "shotVariance": 1.7936357537596166
+    },
+    {
+      "seed": 5,
+      "shots": 21,
+      "goals": 3,
+      "xg": 1.7695647099880405,
+      "passes": 883,
+      "completion": 0.9433748584371461,
+      "shotVariance": 1.5122486793002774
+    },
+    {
+      "seed": 6,
+      "shots": 24,
+      "goals": 1,
+      "xg": 2.150975597405003,
+      "passes": 873,
+      "completion": 0.9266895761741123,
+      "shotVariance": 1.8941541683837222
+    },
+    {
+      "seed": 7,
+      "shots": 25,
+      "goals": 5,
+      "xg": 2.038857843722281,
+      "passes": 877,
+      "completion": 0.9258836944127709,
+      "shotVariance": 1.8132484779059996
+    },
+    {
+      "seed": 8,
+      "shots": 24,
+      "goals": 3,
+      "xg": 2.060186083154399,
+      "passes": 867,
+      "completion": 0.9388696655132641,
+      "shotVariance": 1.8006495075064026
+    },
+    {
+      "seed": 9,
+      "shots": 22,
+      "goals": 3,
+      "xg": 2.2978594366219163,
+      "passes": 884,
+      "completion": 0.9117647058823529,
+      "shotVariance": 1.9053397813439694
+    },
+    {
+      "seed": 10,
+      "shots": 23,
+      "goals": 3,
+      "xg": 1.9727636266547095,
+      "passes": 877,
+      "completion": 0.9384264538198404,
+      "shotVariance": 1.756128448463992
+    },
+    {
+      "seed": 11,
+      "shots": 32,
+      "goals": 4,
+      "xg": 2.8802037565247427,
+      "passes": 855,
+      "completion": 0.9368421052631579,
+      "shotVariance": 2.494430237733844
+    },
+    {
+      "seed": 12,
+      "shots": 27,
+      "goals": 1,
+      "xg": 2.6094366818859087,
+      "passes": 885,
+      "completion": 0.9299435028248587,
+      "shotVariance": 2.2548725822688978
+    },
+    {
+      "seed": 13,
+      "shots": 15,
+      "goals": 0,
+      "xg": 1.0949339027921923,
+      "passes": 895,
+      "completion": 0.929608938547486,
+      "shotVariance": 0.9865509613359952
+    },
+    {
+      "seed": 14,
+      "shots": 25,
+      "goals": 1,
+      "xg": 2.16065158995343,
+      "passes": 878,
+      "completion": 0.9362186788154897,
+      "shotVariance": 1.8728077120148783
+    },
+    {
+      "seed": 15,
+      "shots": 15,
+      "goals": 0,
+      "xg": 1.111563381988506,
+      "passes": 907,
+      "completion": 0.9106945975744212,
+      "shotVariance": 0.9511185952943917
+    },
+    {
+      "seed": 16,
+      "shots": 22,
+      "goals": 0,
+      "xg": 1.4304209588694896,
+      "passes": 874,
+      "completion": 0.9450800915331807,
+      "shotVariance": 1.3037073254238623
+    },
+    {
+      "seed": 17,
+      "shots": 23,
+      "goals": 3,
+      "xg": 1.7485044403172532,
+      "passes": 884,
+      "completion": 0.9253393665158371,
+      "shotVariance": 1.5435387280882973
+    },
+    {
+      "seed": 18,
+      "shots": 22,
+      "goals": 0,
+      "xg": 1.5145357462790414,
+      "passes": 883,
+      "completion": 0.9433748584371461,
+      "shotVariance": 1.3638809329117938
+    },
+    {
+      "seed": 19,
+      "shots": 25,
+      "goals": 3,
+      "xg": 2.4825791712239997,
+      "passes": 869,
+      "completion": 0.9493670886075949,
+      "shotVariance": 2.0904666747730243
+    },
+    {
+      "seed": 20,
+      "shots": 23,
+      "goals": 1,
+      "xg": 1.785330979025915,
+      "passes": 888,
+      "completion": 0.9268018018018018,
+      "shotVariance": 1.5547123327042747
+    },
+    {
+      "seed": 21,
+      "shots": 23,
+      "goals": 0,
+      "xg": 2.4740983533685563,
+      "passes": 884,
+      "completion": 0.9332579185520362,
+      "shotVariance": 2.0307752226117723
+    },
+    {
+      "seed": 22,
+      "shots": 20,
+      "goals": 1,
+      "xg": 1.57344702257626,
+      "passes": 891,
+      "completion": 0.9304152637485971,
+      "shotVariance": 1.410924015723283
+    },
+    {
+      "seed": 23,
+      "shots": 21,
+      "goals": 3,
+      "xg": 1.7711920728639912,
+      "passes": 880,
+      "completion": 0.9295454545454546,
+      "shotVariance": 1.5328185340887677
+    },
+    {
+      "seed": 24,
+      "shots": 21,
+      "goals": 3,
+      "xg": 2.1455333382199857,
+      "passes": 893,
+      "completion": 0.9294512877939529,
+      "shotVariance": 1.8153577538337187
+    },
+    {
+      "seed": 25,
+      "shots": 20,
+      "goals": 2,
+      "xg": 1.7595930756213396,
+      "passes": 891,
+      "completion": 0.9371492704826038,
+      "shotVariance": 1.5893091994871242
+    },
+    {
+      "seed": 26,
+      "shots": 20,
+      "goals": 2,
+      "xg": 1.6026800912117514,
+      "passes": 885,
+      "completion": 0.9355932203389831,
+      "shotVariance": 1.3991682648525428
+    },
+    {
+      "seed": 27,
+      "shots": 17,
+      "goals": 2,
+      "xg": 1.386044826046576,
+      "passes": 891,
+      "completion": 0.9337822671156004,
+      "shotVariance": 1.2088819516546856
+    },
+    {
+      "seed": 28,
+      "shots": 23,
+      "goals": 3,
+      "xg": 2.1555621830829224,
+      "passes": 879,
+      "completion": 0.9340159271899886,
+      "shotVariance": 1.8403623829587332
+    },
+    {
+      "seed": 29,
+      "shots": 24,
+      "goals": 2,
+      "xg": 2.5853314706673793,
+      "passes": 885,
+      "completion": 0.9265536723163842,
+      "shotVariance": 2.1621013962348012
+    },
+    {
+      "seed": 30,
+      "shots": 27,
+      "goals": 1,
+      "xg": 2.657776199090612,
+      "passes": 869,
+      "completion": 0.9378596087456847,
+      "shotVariance": 2.253635492244485
+    },
+    {
+      "seed": 31,
+      "shots": 22,
+      "goals": 3,
+      "xg": 1.3957221198787602,
+      "passes": 880,
+      "completion": 0.9409090909090909,
+      "shotVariance": 1.2598150699735595
+    },
+    {
+      "seed": 32,
+      "shots": 31,
+      "goals": 3,
+      "xg": 2.728675951772197,
+      "passes": 868,
+      "completion": 0.9400921658986175,
+      "shotVariance": 2.3738791937798283
+    },
+    {
+      "seed": 33,
+      "shots": 24,
+      "goals": 3,
+      "xg": 2.3181324286285663,
+      "passes": 879,
+      "completion": 0.9271899886234357,
+      "shotVariance": 1.9776977255690396
+    },
+    {
+      "seed": 34,
+      "shots": 29,
+      "goals": 2,
+      "xg": 1.9417607273245387,
+      "passes": 871,
+      "completion": 0.9402985074626866,
+      "shotVariance": 1.7607603045295028
+    },
+    {
+      "seed": 35,
+      "shots": 26,
+      "goals": 1,
+      "xg": 2.213369727368911,
+      "passes": 878,
+      "completion": 0.958997722095672,
+      "shotVariance": 1.9135811446416298
+    },
+    {
+      "seed": 36,
+      "shots": 23,
+      "goals": 2,
+      "xg": 2.251079661192214,
+      "passes": 880,
+      "completion": 0.928409090909091,
+      "shotVariance": 1.8843944574751779
+    },
+    {
+      "seed": 37,
+      "shots": 29,
+      "goals": 4,
+      "xg": 3.2023123690010395,
+      "passes": 866,
+      "completion": 0.9341801385681293,
+      "shotVariance": 2.676619083743878
+    },
+    {
+      "seed": 38,
+      "shots": 22,
+      "goals": 2,
+      "xg": 2.4237992877639187,
+      "passes": 879,
+      "completion": 0.9362912400455062,
+      "shotVariance": 1.947190472918594
+    },
+    {
+      "seed": 39,
+      "shots": 22,
+      "goals": 2,
+      "xg": 2.126789742986583,
+      "passes": 883,
+      "completion": 0.9433748584371461,
+      "shotVariance": 1.8391933992828218
+    },
+    {
+      "seed": 40,
+      "shots": 25,
+      "goals": 2,
+      "xg": 2.7972561373259826,
+      "passes": 876,
+      "completion": 0.9452054794520548,
+      "shotVariance": 2.3344393195371382
+    },
+    {
+      "seed": 41,
+      "shots": 33,
+      "goals": 3,
+      "xg": 2.8050656847569138,
+      "passes": 859,
+      "completion": 0.9324796274738067,
+      "shotVariance": 2.4748314618340794
+    },
+    {
+      "seed": 42,
+      "shots": 21,
+      "goals": 1,
+      "xg": 1.693801456574174,
+      "passes": 876,
+      "completion": 0.952054794520548,
+      "shotVariance": 1.483896113208638
+    },
+    {
+      "seed": 43,
+      "shots": 31,
+      "goals": 2,
+      "xg": 2.9517392702288516,
+      "passes": 864,
+      "completion": 0.9398148148148148,
+      "shotVariance": 2.5220221701200214
+    },
+    {
+      "seed": 44,
+      "shots": 21,
+      "goals": 1,
+      "xg": 1.6614776071567954,
+      "passes": 881,
+      "completion": 0.9364358683314415,
+      "shotVariance": 1.4533962999690924
+    },
+    {
+      "seed": 45,
+      "shots": 25,
+      "goals": 7,
+      "xg": 2.882840476164348,
+      "passes": 864,
+      "completion": 0.9375,
+      "shotVariance": 2.4002749402944112
+    },
+    {
+      "seed": 46,
+      "shots": 24,
+      "goals": 5,
+      "xg": 2.1339300258303395,
+      "passes": 870,
+      "completion": 0.9367816091954023,
+      "shotVariance": 1.882003125694475
+    },
+    {
+      "seed": 47,
+      "shots": 23,
+      "goals": 2,
+      "xg": 2.0487487353778735,
+      "passes": 880,
+      "completion": 0.9272727272727272,
+      "shotVariance": 1.7423569955756917
+    },
+    {
+      "seed": 48,
+      "shots": 28,
+      "goals": 2,
+      "xg": 2.673977425263269,
+      "passes": 869,
+      "completion": 0.9263521288837745,
+      "shotVariance": 2.3157835400642655
+    },
+    {
+      "seed": 49,
+      "shots": 16,
+      "goals": 1,
+      "xg": 1.5994427693098985,
+      "passes": 883,
+      "completion": 0.928652321630804,
+      "shotVariance": 1.4013054890701266
+    },
+    {
+      "seed": 50,
+      "shots": 26,
+      "goals": 5,
+      "xg": 2.733612676547687,
+      "passes": 883,
+      "completion": 0.9297848244620611,
+      "shotVariance": 2.2741898465677983
+    },
+    {
+      "seed": 51,
+      "shots": 31,
+      "goals": 4,
+      "xg": 3.229788082803675,
+      "passes": 872,
+      "completion": 0.9426605504587156,
+      "shotVariance": 2.681562803960363
+    },
+    {
+      "seed": 52,
+      "shots": 21,
+      "goals": 0,
+      "xg": 1.648567892662127,
+      "passes": 880,
+      "completion": 0.9363636363636364,
+      "shotVariance": 1.438675620066664
+    },
+    {
+      "seed": 53,
+      "shots": 25,
+      "goals": 2,
+      "xg": 2.2020533785695795,
+      "passes": 880,
+      "completion": 0.9306818181818182,
+      "shotVariance": 1.9385086758956847
+    },
+    {
+      "seed": 54,
+      "shots": 27,
+      "goals": 3,
+      "xg": 2.936546946175548,
+      "passes": 867,
+      "completion": 0.9319492502883506,
+      "shotVariance": 2.4647670068089984
+    },
+    {
+      "seed": 55,
+      "shots": 21,
+      "goals": 2,
+      "xg": 2.529572350114842,
+      "passes": 881,
+      "completion": 0.9137343927355278,
+      "shotVariance": 2.101698155811205
+    },
+    {
+      "seed": 56,
+      "shots": 24,
+      "goals": 0,
+      "xg": 2.8997027935107726,
+      "passes": 884,
+      "completion": 0.9434389140271493,
+      "shotVariance": 2.3729125006432192
+    },
+    {
+      "seed": 57,
+      "shots": 20,
+      "goals": 1,
+      "xg": 1.7485233884377056,
+      "passes": 889,
+      "completion": 0.9403824521934758,
+      "shotVariance": 1.5531188457469185
+    },
+    {
+      "seed": 58,
+      "shots": 23,
+      "goals": 1,
+      "xg": 1.9823046007874763,
+      "passes": 875,
+      "completion": 0.9474285714285714,
+      "shotVariance": 1.6624922868782992
+    },
+    {
+      "seed": 59,
+      "shots": 25,
+      "goals": 3,
+      "xg": 1.9781342996486484,
+      "passes": 882,
+      "completion": 0.9285714285714286,
+      "shotVariance": 1.754871838187898
+    },
+    {
+      "seed": 60,
+      "shots": 25,
+      "goals": 3,
+      "xg": 2.5301522798001663,
+      "passes": 880,
+      "completion": 0.9409090909090909,
+      "shotVariance": 2.1740501312959633
+    },
+    {
+      "seed": 61,
+      "shots": 24,
+      "goals": 2,
+      "xg": 2.675828629419518,
+      "passes": 868,
+      "completion": 0.9400921658986175,
+      "shotVariance": 2.2662650151757058
+    },
+    {
+      "seed": 62,
+      "shots": 26,
+      "goals": 3,
+      "xg": 2.3170248259872297,
+      "passes": 881,
+      "completion": 0.9341657207718501,
+      "shotVariance": 1.997107726327562
+    },
+    {
+      "seed": 63,
+      "shots": 27,
+      "goals": 3,
+      "xg": 2.0868905689650368,
+      "passes": 871,
+      "completion": 0.939150401836969,
+      "shotVariance": 1.8167771020328243
+    },
+    {
+      "seed": 64,
+      "shots": 23,
+      "goals": 2,
+      "xg": 2.009265497178665,
+      "passes": 885,
+      "completion": 0.9412429378531073,
+      "shotVariance": 1.6976011398094932
+    },
+    {
+      "seed": 65,
+      "shots": 17,
+      "goals": 1,
+      "xg": 1.355966606790087,
+      "passes": 886,
+      "completion": 0.945823927765237,
+      "shotVariance": 1.1954363789847515
+    },
+    {
+      "seed": 66,
+      "shots": 27,
+      "goals": 0,
+      "xg": 1.9218086509281749,
+      "passes": 881,
+      "completion": 0.9489216799091941,
+      "shotVariance": 1.70832170283603
+    },
+    {
+      "seed": 67,
+      "shots": 29,
+      "goals": 1,
+      "xg": 2.5763561409621474,
+      "passes": 870,
+      "completion": 0.9333333333333333,
+      "shotVariance": 2.178769216696217
+    },
+    {
+      "seed": 68,
+      "shots": 31,
+      "goals": 3,
+      "xg": 3.3851647654514374,
+      "passes": 871,
+      "completion": 0.9460390355912744,
+      "shotVariance": 2.864463108739382
+    },
+    {
+      "seed": 69,
+      "shots": 33,
+      "goals": 4,
+      "xg": 2.958726728295629,
+      "passes": 872,
+      "completion": 0.9392201834862385,
+      "shotVariance": 2.5878717598969234
+    },
+    {
+      "seed": 70,
+      "shots": 15,
+      "goals": 3,
+      "xg": 1.6381958336944145,
+      "passes": 890,
+      "completion": 0.9426966292134832,
+      "shotVariance": 1.3837172303765328
+    },
+    {
+      "seed": 71,
+      "shots": 16,
+      "goals": 0,
+      "xg": 1.5521426303671892,
+      "passes": 891,
+      "completion": 0.936026936026936,
+      "shotVariance": 1.3402580276538414
+    },
+    {
+      "seed": 72,
+      "shots": 18,
+      "goals": 1,
+      "xg": 1.8242009078228945,
+      "passes": 881,
+      "completion": 0.9353007945516458,
+      "shotVariance": 1.5359347091640072
+    },
+    {
+      "seed": 73,
+      "shots": 20,
+      "goals": 3,
+      "xg": 1.7022763834238257,
+      "passes": 890,
+      "completion": 0.9269662921348315,
+      "shotVariance": 1.4397080199441559
+    },
+    {
+      "seed": 74,
+      "shots": 21,
+      "goals": 3,
+      "xg": 1.7853542943697924,
+      "passes": 875,
+      "completion": 0.9577142857142857,
+      "shotVariance": 1.5520659053503973
+    },
+    {
+      "seed": 75,
+      "shots": 29,
+      "goals": 0,
+      "xg": 2.839846171607289,
+      "passes": 870,
+      "completion": 0.9448275862068966,
+      "shotVariance": 2.401422400741813
+    },
+    {
+      "seed": 76,
+      "shots": 23,
+      "goals": 0,
+      "xg": 2.1792809726787254,
+      "passes": 881,
+      "completion": 0.9387060158910329,
+      "shotVariance": 1.8223085836632646
+    },
+    {
+      "seed": 77,
+      "shots": 29,
+      "goals": 3,
+      "xg": 2.7338260990123384,
+      "passes": 880,
+      "completion": 0.9409090909090909,
+      "shotVariance": 2.3449599505783145
+    },
+    {
+      "seed": 78,
+      "shots": 23,
+      "goals": 6,
+      "xg": 2.1497288462389097,
+      "passes": 875,
+      "completion": 0.9485714285714286,
+      "shotVariance": 1.881312328429527
+    },
+    {
+      "seed": 79,
+      "shots": 23,
+      "goals": 0,
+      "xg": 2.1696604939378172,
+      "passes": 889,
+      "completion": 0.9212598425196851,
+      "shotVariance": 1.9159893169251316
+    },
+    {
+      "seed": 80,
+      "shots": 20,
+      "goals": 3,
+      "xg": 2.0215540820216296,
+      "passes": 882,
+      "completion": 0.9410430839002267,
+      "shotVariance": 1.7134810220905248
+    },
+    {
+      "seed": 81,
+      "shots": 27,
+      "goals": 1,
+      "xg": 2.3311170877822676,
+      "passes": 873,
+      "completion": 0.9347079037800687,
+      "shotVariance": 2.0400297775282925
+    },
+    {
+      "seed": 82,
+      "shots": 22,
+      "goals": 5,
+      "xg": 2.5723837638946003,
+      "passes": 875,
+      "completion": 0.9302857142857143,
+      "shotVariance": 2.152042424185818
+    },
+    {
+      "seed": 83,
+      "shots": 21,
+      "goals": 0,
+      "xg": 2.3629460639666604,
+      "passes": 882,
+      "completion": 0.9263038548752834,
+      "shotVariance": 1.9292584988348505
+    },
+    {
+      "seed": 84,
+      "shots": 21,
+      "goals": 1,
+      "xg": 2.503443024394178,
+      "passes": 879,
+      "completion": 0.9351535836177475,
+      "shotVariance": 2.0970181474052776
+    },
+    {
+      "seed": 85,
+      "shots": 16,
+      "goals": 2,
+      "xg": 1.794880344669343,
+      "passes": 891,
+      "completion": 0.9225589225589226,
+      "shotVariance": 1.4988299496731188
+    },
+    {
+      "seed": 86,
+      "shots": 26,
+      "goals": 0,
+      "xg": 2.1281706436573464,
+      "passes": 886,
+      "completion": 0.9311512415349887,
+      "shotVariance": 1.8868147239112252
+    },
+    {
+      "seed": 87,
+      "shots": 25,
+      "goals": 4,
+      "xg": 2.5182155012291303,
+      "passes": 877,
+      "completion": 0.9395667046750285,
+      "shotVariance": 2.132801722761351
+    },
+    {
+      "seed": 88,
+      "shots": 17,
+      "goals": 1,
+      "xg": 1.4149498460821834,
+      "passes": 890,
+      "completion": 0.9393258426966292,
+      "shotVariance": 1.2410090314338351
+    },
+    {
+      "seed": 89,
+      "shots": 19,
+      "goals": 2,
+      "xg": 1.732303331323193,
+      "passes": 892,
+      "completion": 0.9316143497757847,
+      "shotVariance": 1.4939804351576187
+    },
+    {
+      "seed": 90,
+      "shots": 23,
+      "goals": 1,
+      "xg": 1.5677918421576047,
+      "passes": 874,
+      "completion": 0.9427917620137299,
+      "shotVariance": 1.419468036348293
+    },
+    {
+      "seed": 91,
+      "shots": 17,
+      "goals": 0,
+      "xg": 1.3014359808480502,
+      "passes": 896,
+      "completion": 0.9252232142857143,
+      "shotVariance": 1.1675302037584603
+    },
+    {
+      "seed": 92,
+      "shots": 22,
+      "goals": 4,
+      "xg": 1.930067965077388,
+      "passes": 871,
+      "completion": 0.9425947187141217,
+      "shotVariance": 1.6822442602483882
+    },
+    {
+      "seed": 93,
+      "shots": 25,
+      "goals": 1,
+      "xg": 1.516781406605179,
+      "passes": 878,
+      "completion": 0.9339407744874715,
+      "shotVariance": 1.3946983503348935
+    },
+    {
+      "seed": 94,
+      "shots": 27,
+      "goals": 2,
+      "xg": 1.9431472533432872,
+      "passes": 892,
+      "completion": 0.9282511210762332,
+      "shotVariance": 1.7571655178617591
+    },
+    {
+      "seed": 95,
+      "shots": 24,
+      "goals": 2,
+      "xg": 2.585073990108497,
+      "passes": 880,
+      "completion": 0.9295454545454546,
+      "shotVariance": 2.1906639700612662
+    },
+    {
+      "seed": 96,
+      "shots": 19,
+      "goals": 0,
+      "xg": 1.7800572264309218,
+      "passes": 890,
+      "completion": 0.9471910112359551,
+      "shotVariance": 1.5144098669357546
+    },
+    {
+      "seed": 97,
+      "shots": 22,
+      "goals": 4,
+      "xg": 2.1253696972902065,
+      "passes": 880,
+      "completion": 0.9215909090909091,
+      "shotVariance": 1.8316323056021973
+    },
+    {
+      "seed": 98,
+      "shots": 22,
+      "goals": 3,
+      "xg": 1.7198876617644214,
+      "passes": 891,
+      "completion": 0.9337822671156004,
+      "shotVariance": 1.5535630773951408
+    },
+    {
+      "seed": 99,
+      "shots": 28,
+      "goals": 4,
+      "xg": 2.746222186275397,
+      "passes": 883,
+      "completion": 0.927519818799547,
+      "shotVariance": 2.343514855572543
+    },
+    {
+      "seed": 100,
+      "shots": 16,
+      "goals": 1,
+      "xg": 1.2971801222487862,
+      "passes": 894,
+      "completion": 0.9228187919463087,
+      "shotVariance": 1.1377370456444318
+    }
+  ]
+}
