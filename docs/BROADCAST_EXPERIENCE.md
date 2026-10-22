@@ -44,3 +44,5 @@ The unchanged Foundry cache SHA256 is:
 - Python: 48 independent pipeline/claim and legacy regression tests. No automated test calls Azure.
 
 Browser screenshots and captures are review artifacts, not a guarantee of frame rate on every GPU. Low graphics is the default; 2D remains available. No claim of formal hackathon submission follows from a deployment.
+
+An additional 390×844 touch-emulated Chrome review observed 420 frames over approximately seven seconds around the winning shot (59.96 fps mean; 33.4 ms worst frame), with the ball safely inside the projected frustum throughout. A native single-finger canvas swipe scrolled the page 81 px. [Observation](evaluation/broadcast-browser.json). This is a narrow software-renderer observation, not a physical-phone performance claim. CI separately guards native scrolling and trusted two-finger zoom input. Event-derived headlines describe the logged score change; they are UI factual rendering, separate from the agents' cached evidence selection.

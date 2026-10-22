@@ -198,6 +198,16 @@ try{
   await fallback.getByRole('status').filter({hasText:'3D graphics are unavailable'}).waitFor();
   assert.ok(await fallback.locator('.new-pitch').isVisible());
   await fallback.close();
+  const touchContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  const touchPage=await touchContext.newPage();await touchPage.goto('http://127.0.0.1:5179/?seed=82');
+  const touchCanvas=touchPage.locator('.new-pitch3d canvas');await touchCanvas.waitFor();await touchCanvas.scrollIntoViewIfNeeded();
+  const touchCDP=await touchContext.newCDPSession(touchPage),tb=await touchCanvas.boundingBox(),tx=tb.x+tb.width*.5,ty=tb.y+tb.height*.65;
+  const scrollBefore=await touchPage.evaluate(()=>scrollY);
+  await touchCDP.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:tx,y:ty,id:0}]});
+  for(let i=1;i<=4;i++){await touchCDP.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:tx,y:ty-i*24,id:0}]});await touchPage.waitForTimeout(40);}
+  await touchCDP.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touchPage.waitForTimeout(200);
+  assert.ok(await touchPage.evaluate(()=>scrollY)>scrollBefore+30,'One-finger canvas swipe keeps native page scrolling');
+  await touchContext.close();
   assert.deepEqual(errors,[]);
-  console.log('Browser gates passed: 22 actors, 1x/seek/zoom/restart, no future xG, labels, seeded score, 3D frame parity/cameras/quality, mobile, WebGL fallback, genuine Foundry cache, audience scope, AI JSON/VTT, no future winner, and tampered-cache rejection.');
+  console.log('Browser gates passed: 22 actors, 1x/seek/zoom/restart, no future xG, labels, seeded score, 3D frame parity/cameras/quality, mobile, WebGL fallback, genuine Foundry cache, audience scope, AI JSON/VTT, no future winner, tampered-cache rejection, five responsive widths, formation provenance and native mobile scrolling.');
 }finally{await browser?.close();server.kill();}

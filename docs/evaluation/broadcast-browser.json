@@ -1,0 +1,16 @@
+{
+  "reviewDate": "2026-10-22",
+  "environment": "Installed Chrome, headless SwiftShader, mobile touch emulation; not a physical phone benchmark",
+  "viewport": {"width": 390, "height": 844},
+  "match": "SIM-82",
+  "startingSecond": 4675,
+  "observationSeconds": 7,
+  "sampledAnimationFrames": 420,
+  "observedMeanFps": 59.96487771447514,
+  "worstFrameMs": 33.40000000000009,
+  "maxAbsBallProjectedX": 0.47484622897913803,
+  "maxAbsBallProjectedY": 0.10046582573673235,
+  "frustumVisibleBounds": [-1, 1],
+  "nativeSingleFingerScrollPixels": 81,
+  "scope": "One continuous winning-shot/goal replay; does not establish performance on other devices. CI also checks trusted pinch/wheel/reset, native touch scrolling, five widths, exact mesh parity and all-match camera composition."
+}
