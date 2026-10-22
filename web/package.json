@@ -13,7 +13,8 @@
     "test:evidence": "node --experimental-strip-types scripts/check-evidence.mjs",
     "test:intelligence": "node --experimental-strip-types scripts/check-intelligence.mjs",
     "test:production": "node --experimental-strip-types scripts/check-production.mjs",
-    "test:camera": "node --experimental-strip-types scripts/check-camera.mjs"
+    "test:camera": "node --experimental-strip-types scripts/check-camera.mjs",
+    "test:highlights": "node --experimental-strip-types scripts/check-highlights.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

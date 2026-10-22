@@ -1,20 +1,21 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { generateMatch, atTime, eventsUntil, validateMatch, type Side, type EventLog } from "./footballEngine";
 import {matchStory, placeLabels, shotExplanation, pulse, type Lens} from "./matchAnalysis";
-import { Pause, Play, RotateCcw, FastForward, ShieldCheck, Crosshair, Activity } from "lucide-react";
+import { Pause, Play, RotateCcw, FastForward, ShieldCheck } from "lucide-react";
 import EvidenceExport from "./EvidenceExport";
 import FoundryMoment,{useVerifiedMatchAI} from "./FoundryMoment";
-import {aiAudience,visibleAICard} from "./momentIntelligence";
+import MatchTimeline from "./MatchTimeline";
+import {ANGLES,aiAudience,visibleAICard} from "./momentIntelligence";
 const MatchPitch3D=lazy(()=>import("./MatchPitch3D"));
 const mtime=(v:number)=>String(Math.floor(v/60)).padStart(2,"0")+":"+String(Math.floor(v%60)).padStart(2,"0");
 type View="fan"|"analyst"|"player";
-export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
+export default function FootballMatch2D(){
   const [seed,setSeed]=useState(()=>{const value=new URLSearchParams(location.search).get("seed");return value!==null&&/^\d+$/.test(value)&&+value<=4294967295?+value:82;});
   const [seedInput,setSeedInput]=useState(String(seed));
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
   const [speed,setSpeed]=useState(1);
-  const [renderer,setRenderer]=useState<"2d"|"3d">("2d");
+  const [renderer,setRenderer]=useState<"2d"|"3d">("3d");
   const [camera,setCamera]=useState<"broadcast"|"tactical"|"player">("broadcast");
   const [quality,setQuality]=useState<"low"|"medium">("low");
   const [flipped,setFlipped]=useState(false);
@@ -28,6 +29,9 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   useEffect(()=>{try{localStorage.setItem("tacticlens.followTeam",String(followTeam));}catch{}},[followTeam]);
   const [showPlayerStats,setShowPlayerStats]=useState(false);
   const [lens,setLens]=useState<Lens>("fan");
+  const [replayEnd,setReplayEnd]=useState<number|null>(null);
+  const [replayIds,setReplayIds]=useState<string[]>([]);
+  const [dismissedAI,setDismissedAI]=useState("");
   const [inspected,setInspected]=useState<EventLog|null>(null);
   const match=useMemo(()=>generateMatch(seed),[seed]);
   const ai=useVerifiedMatchAI(match);
@@ -51,13 +55,13 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
     const tick=(now:number)=>{
       const elapsed=(now-previous)/1000;
       previous=now;
-      setTime(t=>Math.min(match.duration,t+elapsed*speed));
+      setTime(t=>Math.min(replayEnd??match.duration,t+elapsed*speed));
       raf=requestAnimationFrame(tick);
     };
     raf=requestAnimationFrame(tick);
     return()=>cancelAnimationFrame(raf);
-  },[playing,speed,match.duration]);
-  useEffect(()=>{if(time>=match.duration)setPlaying(false)},[time,match.duration]);
+  },[playing,speed,match.duration,replayEnd]);
+  useEffect(()=>{if(time>=match.duration||replayEnd!==null&&time>=replayEnd)setPlaying(false)},[time,match.duration,replayEnd]);
   const px=(v:number)=>20+v/105*960;
   const py=(v:number)=>20+v/68*620;
   const x=px(current.ball.x),y=py(current.ball.y);
@@ -78,7 +82,8 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   const selectedXg=(lastShot?.shotXg??0)*100;
   const pastShots=visible.filter(e=>e.type==="shot");
   const story=matchStory(match,visible,lens,followTeam,selected);
-  const seekEvent=(e:EventLog)=>{setTime(e.time);setPlaying(false);setInspected(e);setSelected(e.player);requestAnimationFrame(()=>document.querySelector(".new-pitchwrap")?.scrollIntoView({behavior:"smooth",block:"center"}));};
+  const replayEvent=(e:EventLog,ids:string[]=[e.id])=>{const source=e.sourceId?match.events.find(a=>a.id===e.sourceId):e;setTime(Math.max(0,(source?.time??e.time)-4));setReplayEnd(Math.min(match.duration,e.time+5));setReplayIds(ids);setSpeed(1);setPlaying(true);setInspected(e);setSelected(e.player);requestAnimationFrame(()=>document.querySelector(".new-pitchwrap")?.scrollIntoView({behavior:"smooth",block:"center"}));};
+  const seekEvent=(e:EventLog)=>{setReplayEnd(null);setTime(e.time);setPlaying(false);setInspected(e);setSelected(e.player);requestAnimationFrame(()=>document.querySelector(".new-pitchwrap")?.scrollIntoView({behavior:"smooth",block:"center"}));};
   const screenPeople=current.people.map(p=>({x:px(p.x),y:py(p.y)}));
   const nearby=match.players.filter(p=>p.id!==selected).sort((a,b)=>Math.hypot(current.people[a.id].x-current.ball.x,current.people[a.id].y-current.ball.y)-Math.hypot(current.people[b.id].x-current.ball.x,current.people[b.id].y-current.ball.y)).slice(0,4).map(p=>p.id);
   const shotBox=lastShot&&time-lastShot.time<5?{x:Math.max(40,Math.min(840,px(lastShot.x)+25)),y:Math.max(35,py(lastShot.y)-44),width:123,height:42}:null;
@@ -95,25 +100,23 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
   };
   return <div className="new-match">
     <div className="new-topbar">
-      <div className="new-brand"><span>TL</span><strong>TACTICLENS</strong><small>11v11 MATCH STUDIO</small></div>
-      <div className="new-topbar-right"><span><i className="new-live-dot"/> SYNTHETIC LIVE SIMULATION</span>
-        <button onClick={onLegacy}>Archived AI evidence demo ↗</button></div>
+      <div className="new-brand"><span>TL</span><strong>TACTICLENS</strong><small>Live</small></div>
+      <div className="new-topbar-right"><span>Football, explained.</span><a href="#match-intelligence">Microsoft Foundry intelligence ↗</a></div>
     </div>
     <div className="new-scorebar">
       <div className="new-club new-north"><span className="new-crest">N</span><div><small>HOME · 4-3-3</small><strong>Northport FC</strong></div></div>
-      <div className="new-score"><strong>{score[0]} <span>:</span> {score[1]}</strong><small>{mtime(time)} <span>/ 90:00</span></small></div>
+      <div className="new-score"><strong>{score[0]} <span>:</span> {score[1]}</strong><small>{mtime(time)} <span>{time>=5400?"FULL TIME":time===0?"KICKOFF":"/ 90:00"}</span></small></div>
       <div className="new-club new-south"><div><small>AWAY · 4-3-3</small><strong>Southbridge Athletic</strong></div><span className="new-crest">S</span></div>
     </div>
     <div className="new-layout">
       <main className="new-main">
         <div className="new-pitchhead">
-          <div><span className="new-kicker"><Activity size={13}/> MATCH ENGINE</span><h2>Match studio</h2>
-            <p>22 players · One match clock · Every action traceable</p></div>
+          <div className="match-title"><h1>The match</h1><span>Simulated football · {match.matchId}</span></div>
           <div className="new-view-controls">
             <label className="new-stats-toggle"><input type="checkbox" checked={showPlayerStats}
               onChange={e=>setShowPlayerStats(e.target.checked)} aria-label="Player stats"/> Nearby player stats</label>
           <select className="new-zoom" disabled={renderer==="3d"} aria-label="Pitch zoom" value={zoom} onChange={e=>setZoom(+e.target.value)}><option value="1">Full pitch</option><option value="1.5">Focus 1.5×</option><option value="2">Focus 2×</option></select>
-          <div className="new-mode"><button className={mode==="fan"?"chosen":""} onClick={()=>{setMode("fan");setCamera("broadcast")}}>Match</button><button className={mode==="analyst"?"chosen":""} onClick={()=>{setMode("analyst");setCamera("tactical")}}>Tactical</button><button className={mode==="player"?"chosen":""} onClick={()=>{setMode("player");setCamera("player")}}>Player focus</button></div></div>
+          {renderer==="2d"&&<div className="new-mode"><button className={mode==="fan"?"chosen":""} onClick={()=>{setMode("fan");setCamera("broadcast")}}>Match</button><button className={mode==="analyst"?"chosen":""} onClick={()=>{setMode("analyst");setCamera("tactical")}}>Tactical</button><button className={mode==="player"?"chosen":""} onClick={()=>{setMode("player");setCamera("player")}}>Player focus</button></div>}</div>
         </div>
         <div className="new-render-controls"><div className="new-mode" aria-label="Pitch renderer"><button aria-pressed={renderer==="2d"} className={renderer==="2d"?"chosen":""} onClick={()=>setRenderer("2d")}>2D pitch</button><button aria-pressed={renderer==="3d"} className={renderer==="3d"?"chosen":""} onClick={()=>{setGraphicsError(false);setRenderer("3d")}}>3D studio</button></div>{renderer==="3d"&&<><select aria-label="3D camera" value={camera} onChange={e=>setCamera(e.target.value as typeof camera)}><option value="broadcast">Broadcast camera</option><option value="tactical">Tactical camera</option><option value="player">Player camera</option></select><select aria-label="Graphics quality" value={quality} onChange={e=>setQuality(e.target.value as typeof quality)}><option value="low">Low graphics</option><option value="medium">Medium graphics</option></select><button aria-label="Zoom out" disabled={cameraZoom<=.7} onClick={()=>setCameraZoom(z=>Math.max(.7,z-.15))}>−</button><output aria-label="Camera zoom">{cameraZoom.toFixed(1)}×</output><button aria-label="Zoom in" disabled={cameraZoom>=1.8} onClick={()=>setCameraZoom(z=>Math.min(1.8,z+.15))}>+</button><button onClick={()=>{setCameraZoom(1);setCameraReset(n=>n+1)}}>Reset camera</button><button className="new-flip" onClick={()=>setFlipped(v=>!v)}>Flip pitch</button></>}</div>
         {graphicsError&&<p className="new-graphics-message" role="status">3D graphics are unavailable on this device. The 2D replay is ready.</p>}
@@ -170,41 +173,46 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
             {current.phase===1&&<circle cx={x} cy={y} r="11" stroke="#a6e4fa" opacity=".7" fill="none"/>}
             {current.phase===2&&<circle cx={x} cy={y} r="14" stroke="#ffca7c" opacity=".8" fill="none"/>}
           </svg></>}
-          <div className="new-pitchoverlay"><span><i className="new-live-dot"/> LIVE SIMULATION</span><span>{current.owner>=0?nearest?.name+" ON THE BALL":current.phase===1?"PASS IN FLIGHT":current.phase===2?"SHOT IN FLIGHT":current.phase===3?"RESTART":current.phase===4?"LOOSE BALL":"MATCH ACTIVE"}</span></div>
-          {last&&<div className="new-eventbanner"><span>{mtime(last.time)}</span><strong>{last.text}</strong></div>}
+          <div className="new-pitchoverlay"><span>{replayEnd!==null?"REPLAY":"SIMULATED MATCH"}</span><span>{current.owner>=0?nearest?.name+" ON THE BALL":current.phase===1?"PASS IN FLIGHT":current.phase===2?"SHOT IN FLIGHT":current.phase===3?"STOPPAGE":current.phase===4?"LOOSE BALL":"MATCH ACTIVE"}</span></div>
+          {last&&time-last.time<5&&<div className={`new-eventbanner ${last.type==='goal'?'event-goal':''}`}><span>{last.type==='goal'?'GOAL':mtime(last.time)}</span><strong>{last.text}</strong></div>}
+          {aiCard&&dismissedAI!==aiCard.moment.id&&<div className="broadcast-insight"><span>Microsoft Foundry · Verified</span><strong>{ANGLES[aiCard.angle]}</strong><a href="#match-intelligence">Read insight ↗</a><button aria-label="Dismiss broadcast insight" onClick={()=>setDismissedAI(aiCard.moment.id)}>×</button></div>}
         </div>
         <div className="new-playback">
-          <button aria-label="Restart" onClick={()=>{setTime(0);setPlaying(false)}}><RotateCcw size={18}/></button>
-          <button className="new-play" aria-label={playing?"Pause":"Play"} onClick={()=>{if(time>=match.duration)setTime(0);setInspected(null);setPlaying(p=>!p)}}>{playing?<Pause fill="currentColor" size={18}/>:<Play fill="currentColor" size={18}/>}</button>
+          <button aria-label="Restart" onClick={()=>{setTime(0);setPlaying(false);setReplayEnd(null)}}><RotateCcw size={18}/></button>
+          <button className="new-play" aria-label={playing?"Pause":"Play"} onClick={()=>{if(time>=match.duration)setTime(0);setInspected(null);setReplayEnd(null);setPlaying(p=>!p)}}>{playing?<Pause fill="currentColor" size={18}/>:<Play fill="currentColor" size={18}/>}</button>
           <span>{mtime(time)}</span>
           <input aria-label="Match timeline" type="range" min="0" max={match.duration} step=".25" value={time}
-            onChange={e=>{setTime(+e.target.value);setInspected(null)}}/>
+            onChange={e=>{setTime(+e.target.value);setInspected(null);setReplayEnd(null)}}/>
           <span>90:00</span>
           <button onClick={()=>setSpeed(v=>v===1?2:v===2?4:v===4?8:1)} className="new-speed"><FastForward size={15}/>{speed}×</button>
         </div>
         {showPlayerStats&&<div className={renderer==="3d"?"new-mobile-stats new-3d-stats":"new-mobile-stats"}><strong>#{match.players[selected].number} {match.players[selected].name}</strong><span>{(individual[selected].speed*3.6).toFixed(0)} km/h · Pass {individual[selected].completed}/{individual[selected].attempted} · Wins {individual[selected].wins}</span><small>Tap a player to inspect their stats.</small></div>}
-        <div className="new-moment-controls"><button onClick={()=>{const next=match.events.find(e=>e.type==="shot"&&e.time>time+2);if(next){setTime(Math.max(0,next.time-8));setPlaying(true);setInspected(null);}}}>Next chance →</button>{ai.pack&&<button onClick={()=>{const next=ai.pack!.cards.filter(c=>c.moment.atSecond>time+1).sort((a,b)=>a.moment.atSecond-b.moment.atSecond)[0];if(next){setTime(Math.max(0,next.moment.atSecond-4));setPlaying(true);setInspected(null);}}}>Next AI moment →</button>}<span>{match.matchId} · {playing?"Playing":"Paused"} · {showPlayerStats?renderer==="3d"?"Selected-player stats":"Nearby stat labels":"Select a player for detail"}</span></div>
-        {inspectedVisible&&<section className="new-inspection"><span className="new-kicker">REPLAY EVIDENCE · {inspectedVisible.id}</span><p>{inspectedVisible.text}</p>{inspectedVisible.type==="shot"&&<p>{shotExplanation(inspectedVisible)}</p>}{inspectedVisible.sourceId&&<button onClick={()=>{const source=visible.find(e=>e.id===inspectedVisible.sourceId);if(source)seekEvent(source);}}>Inspect source {inspectedVisible.sourceId} →</button>}</section>}
-        <section className="new-analysis"><div className="new-analysis-heading"><div><span className="new-kicker">EVENT-GROUNDED INTELLIGENCE</span><h3>Follow the match story</h3></div><span className={aiCard?"new-rule-tag new-ai-tag":"new-rule-tag"}>{aiCard?"FOUNDRY AI · PRECOMPUTED":"RULE-BASED · SYNTHETIC"}</span></div>
-          <div className="new-lenses" aria-label="Audience perspective">{(["fan","analyst","club","player"] as Lens[]).map(view=><button key={view} aria-pressed={lens===view} onClick={()=>setLens(view)}>{view==="club"?"Club supporter":view[0].toUpperCase()+view.slice(1)}</button>)}</div>
-          {aiCard&&ai.pack?<FoundryMoment card={aiCard} pack={ai.pack} audience={aiAudience(lens,followTeam)} match={match} time={time} onSeek={seekEvent}/>:<><h4>{story.headline}</h4><p>{story.text}</p><div className="new-evidence-links">{story.evidence.map(e=><button key={e.id} onClick={()=>seekEvent(e)}>{mtime(e.time)} · {e.type} <small>{e.id}</small></button>)}</div><p className="new-muted">{ai.state==='ready'?'Precomputed Foundry evidence appears for the selected player and replay time.':ai.state==='other-seed'?'Deterministic insights for this seed. The Foundry showcase uses seed 82.':ai.state==='loading'?'Loading the optional Foundry cache; deterministic insights remain available.':'Foundry cache unavailable or rejected; showing deterministic insights.'}</p></>}
-          <p className="new-muted">{mtime(time)} recap · {totals.score[0]}–{totals.score[1]} · {totals.shots[0]+totals.shots[1]} shots · {(totals.xg[0]+totals.xg[1]).toFixed(2)} xG. Calculated from events at or before the replay time.</p>
-          <EvidenceExport key={match.matchId} match={match} time={time} view={{lens,team:followTeam,player:selected}}/>
-        </section>
-        <section className="new-analysis"><div className="new-analysis-heading"><div><span className="new-kicker">CHANCE DEVELOPMENT</span><h3>Shot map & expected goals</h3></div><span className="new-muted">Northport → · ← Southbridge</span></div>
+        <div className="new-moment-controls"><button onClick={()=>{const next=match.events.find(e=>e.type==="shot"&&e.time>time+2);if(next){setTime(Math.max(0,next.time-8));setPlaying(true);setReplayEnd(null);setInspected(null);}}}>Next chance →</button>{ai.pack&&<button onClick={()=>{const next=ai.pack!.cards.filter(c=>c.moment.atSecond>time+1).sort((a,b)=>a.moment.atSecond-b.moment.atSecond)[0];if(next){setTime(Math.max(0,next.moment.atSecond-4));setPlaying(true);setReplayEnd(null);setInspected(null);}}}>Next AI moment →</button>}<span>{playing?"Playing":"Paused"} · {replayEnd!==null?"Highlight replay":"Select a player to follow"}</span></div>
+        {inspectedVisible&&<section className="new-inspection"><span className="new-kicker">Evidence · {inspectedVisible.id}</span><p>{inspectedVisible.text}</p>{replayIds.length>1&&<details><summary>Highlight sources ({replayIds.length})</summary><p>{replayIds.join(" · ")}</p></details>}{inspectedVisible.type==="shot"&&<p>{shotExplanation(inspectedVisible)}</p>}{inspectedVisible.sourceId&&<button onClick={()=>{const source=visible.find(e=>e.id===inspectedVisible.sourceId);if(source)seekEvent(source);}}>Inspect source {inspectedVisible.sourceId} →</button>}</section>}
+        <MatchTimeline key={match.matchId} match={match} time={time} lens={lens} team={followTeam} player={selected} onReplay={replayEvent}/>
+        <section className="new-analysis"><div className="new-analysis-heading"><div><h3>Shot map & expected goals</h3></div><span className="new-muted">Northport → · ← Southbridge</span></div>
           <div className="new-shot-workspace"><svg viewBox="0 0 360 230" role="img" aria-label="Shots up to the replay time" className="new-shotmap"><rect x="5" y="5" width="350" height="220" rx="3" fill="#153e31" stroke="#5b8169"/><path d="M180 5V225 M5 60H60V170H5 M355 60H300V170H355" fill="none" stroke="#5b8169"/><circle cx="180" cy="115" r="29" fill="none" stroke="#5b8169"/>{pastShots.map(e=>{const goal=visible.some(r=>r.type==="goal"&&r.sourceId===e.id);return <g key={e.id} role="button" tabIndex={0} aria-label={`Inspect shot ${e.id}`} onKeyDown={k=>{if(k.key==="Enter")seekEvent(e)}} onClick={()=>seekEvent(e)} style={{cursor:"pointer"}}><title>{mtime(e.time)} · {((e.shotXg??0)*100).toFixed(1)}% xG{goal?" · Goal":""}</title><circle cx={5+e.x/105*350} cy={5+e.y/68*220} r={3+(e.shotXg??0)*22} fill={e.team===0?"#c6fa65":"#77aaff"} fillOpacity={goal?1:.35} stroke={e.team===0?"#c6fa65":"#77aaff"} strokeWidth={goal?2:1}/></g>})}</svg>
           <div><svg viewBox="0 0 600 160" role="img" aria-label="Cumulative xG up to replay time" className="new-xgchart"><path d="M25 10V130H575" fill="none" stroke="#486455"/>{[0,1,2,3,4].map(v=><g key={v}><text x="5" y={134-v*30} fill="#9eb9a9" fontSize="10">{v}</text><path d={`M25 ${130-v*30}H575`} stroke="#486455" opacity=".25"/></g>)}<path d={xgPath(0)} fill="none" stroke="#c6fa65" strokeWidth="2.5"/><path d={xgPath(1)} fill="none" stroke="#77aaff" strokeWidth="2.5"/><text x="25" y="152" fill="#9eb9a9" fontSize="11">00:00</text><text x="540" y="152" fill="#9eb9a9" fontSize="11">90:00</text></svg><p className="new-muted">Circle size indicates chance quality; solid circles are scored goals. Click a shot to inspect its frame. Simplified synthetic xG model, not real-world calibrated.</p><div className="new-xg-totals"><span>Northport <b>{expectedGoals[0].toFixed(2)} xG</b></span><span>Southbridge <b>{expectedGoals[1].toFixed(2)} xG</b></span></div></div></div>
         </section>
-        <div className="new-footnote"><ShieldCheck size={13}/> This is a newly simulated 11-v-11 match. Statistics and events come from the same simulation—not the archived Foundry evidence match.</div>
+        <div className="new-footnote"><ShieldCheck size={13}/> Fictional clubs. Deterministic simulation. AI selects verified evidence; match statistics use the replay clock. Player gestures are visual approximations.</div>
       </main>
       <aside className="new-sidebar">
-        <section className="new-card"><span className="new-kicker">MATCH CONTROL</span><h3>Viewing preferences</h3>
+        <section className="new-analysis intelligence-panel" id="match-intelligence"><div className="foundry-brand"><span className="foundry-mark" aria-hidden="true"><i/><i/><i/><i/></span><strong>Microsoft Foundry</strong><span>{ai.pack?'Verified cache':ai.state==='loading'?'Loading…':'Deterministic fallback'}</span></div>
+          <h2>Match intelligence</h2>
+          {ai.pack&&<div className="agent-path" aria-label="Completed agent pipeline">{ai.pack.trace.map((stage,i)=><span key={stage.stage} title={`${stage.agent}: ${((stage.elapsedMs)/1000).toFixed(1)}s, ${stage.inputTokens+stage.outputTokens} tokens`}><b>✓</b> {stage.stage}{i<2&&<i aria-hidden="true">→</i>}</span>)}</div>}
+          <div className="new-lenses" aria-label="Audience perspective">{(["fan","analyst","club","player"] as Lens[]).map(view=><button key={view} aria-pressed={lens===view} onClick={()=>{setLens(view);setMode(view==="analyst"?"analyst":view==="player"?"player":"fan");setCamera(view==="analyst"?"tactical":view==="player"?"player":"broadcast");}}>{view==="club"?"Club supporter":view[0].toUpperCase()+view.slice(1)}</button>)}</div>
+          {aiCard&&ai.pack?<FoundryMoment card={aiCard} pack={ai.pack} audience={aiAudience(lens,followTeam)} match={match} time={time} onSeek={seekEvent} onReplay={replayEvent}/>:<><span className="deterministic-label">Deterministic commentary</span><h4>{story.headline}</h4><p>{story.text}</p><div className="new-evidence-links">{story.evidence.map(e=><button key={e.id} onClick={()=>seekEvent(e)}>{mtime(e.time)} · {e.type} <small>{e.id}</small></button>)}</div><p className="new-muted">{ai.state==='ready'?'Precomputed Foundry evidence appears for the selected player and replay time.':ai.state==='other-seed'?'Deterministic insights for this seed. The Foundry showcase uses seed 82.':ai.state==='loading'?'Loading the optional Foundry cache; deterministic insights remain available.':'Foundry cache unavailable or rejected; showing deterministic insights.'}</p></>}
+          <p className="new-muted">{mtime(time)} recap · {totals.score[0]}–{totals.score[1]} · {totals.shots[0]+totals.shots[1]} shots · {(totals.xg[0]+totals.xg[1]).toFixed(2)} xG. Calculated from events at or before the replay time.</p>
+          <EvidenceExport key={match.matchId} match={match} time={time} view={{lens,team:followTeam,player:selected}}/>
+        </section>
+
+        <section className="new-card"><h3>Your view</h3>
           <label>Follow team<select aria-label="Follow team" value={followTeam} onChange={e=>setFollowTeam(+e.target.value as Side|2)}><option value="2">Both teams</option><option value="0">Northport FC</option><option value="1">Southbridge Athletic</option></select></label>
           <label>Track a player<select aria-label="Track a player" value={selected} onChange={e=>{setSelected(+e.target.value);setMode("player")}}>
             {match.players.map(p=><option key={p.id} value={p.id}>{p.team===0?"NOR":"SOU"} · #{p.number} {p.name} ({p.role})</option>)}
           </select></label>
           <p className="new-muted">Select anyone on the pitch to track their contribution.</p>
-          <div className="new-player-stats">
+          <details className="new-player-stats"><summary>Player contribution</summary>
             <strong>#{match.players[selected].number} {match.players[selected].name}</strong>
             <div><span>Pass completion</span><b>{individual[selected].completed}/{individual[selected].attempted}</b></div>
             <div><span>Receptions</span><b>{individual[selected].receipts}</b></div>
@@ -212,16 +220,16 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
             <div><span>Shots / goals</span><b>{individual[selected].shots} / {individual[selected].goals}</b></div>
             <div><span>Modeled speed</span><b>{(individual[selected].speed*3.6).toFixed(1)} km/h</b></div>
             <div><span>Modeled distance</span><b>{(individual[selected].distance/1000).toFixed(2)} km</b></div>
-          </div></section>
-        <section className="new-card"><span className="new-kicker">LIVE STATISTICS</span><h3>Match pulse</h3>
+          </details></section>
+        <details className="new-card"><summary>Match numbers</summary>
           <div className="new-statrow"><span>Completed passes</span><strong>{completions[0]} – {completions[1]}</strong></div>
           <div className="new-statrow"><span>Attempts</span><strong>{passes[0]} – {passes[1]}</strong></div>
           <div className="new-statrow"><span>Shots</span><strong>{shots[0]} – {shots[1]}</strong></div>
           <div className="new-statrow"><span>Expected goals (xG)</span><strong>{expectedGoals[0].toFixed(2)} – {expectedGoals[1].toFixed(2)}</strong></div>
           <div className="new-statrow"><span>Goal conversion</span><strong>{shots[0]?Math.round(score[0]/shots[0]*100):0}% – {shots[1]?Math.round(score[1]/shots[1]*100):0}%</strong></div>
           <div className="new-statrow"><span>Ball recoveries</span><strong>{tackles[0]} – {tackles[1]}</strong></div>
-        </section>
-        <section className="new-card"><span className="new-kicker">CHANCE QUALITY</span><h3>Goal probabilities</h3>
+        </details>
+        <details className="new-card"><summary>The latest chance</summary>
           <p className="new-muted">Every shot receives a model-derived probability from shot distance, angle and defensive pressure.</p>
           {lastShot ? <div className="new-player-stats">
             <strong>{match.players[lastShot.player].name} · {mtime(lastShot.time)}</strong>
@@ -232,19 +240,19 @@ export default function FootballMatch2D({onLegacy}:{onLegacy:()=>void}){
             <div><span>Match xG</span><b>{(expectedGoals[0]+expectedGoals[1]).toFixed(2)}</b></div>
           </div> : <p className="new-muted">Shot probabilities will appear after the first attempt.</p>}
           <p className="new-muted">Synthetic xG model, not calibrated to real match data.</p>
-        </section>
-        <section className="new-card new-events"><span className="new-kicker">LIVE EVENT LOG</span><h3>On-pitch actions</h3>
+        </details>
+        <details className="new-card new-events"><summary>Recent actions</summary>
           <div className="new-loglist">{recent.length?recent.map(e=><button key={e.id} onClick={()=>seekEvent(e)}>
             <span>{mtime(e.time)}</span><div><strong>{e.type.toUpperCase()}</strong><small>{e.text}</small><small className="new-event-id">{e.id}</small></div></button>):
             <p className="new-muted">Kickoff underway.</p>}</div>
           <small className="new-muted">Click any action to inspect its exact simulation frame.</small>
-        </section>
+        </details>
         <section className="new-card new-validation">
-          <span className="new-kicker"><Crosshair size={12}/> ENGINE CHECK</span>
+          <h3>Explore another match</h3>
           {issues.length===0?<p className="new-ok">22 players · Ownership, movement, kickoffs and event sources validated</p>:
             <p className="new-error">{issues.join("; ")}</p>}
-          <form className="new-seed-form" onSubmit={e=>{e.preventDefault();if(/^\d+$/.test(seedInput)&&+seedInput<=4294967295){setSeed(+seedInput);setTime(0);setPlaying(false);setInspected(null);}}}><label htmlFor="match-seed">Reproducible match seed</label><div><input id="match-seed" type="number" min="0" max="4294967295" value={seedInput} onChange={e=>setSeedInput(e.target.value)} required/><button>Load</button></div></form>
-          <button onClick={()=>{setSeed(n=>n+1);setSeedInput(String(seed+1));setTime(0);setPlaying(false);setInspected(null)}}>Generate another match</button>
+          <form className="new-seed-form" onSubmit={e=>{e.preventDefault();if(/^\d+$/.test(seedInput)&&+seedInput<=4294967295){setSeed(+seedInput);setTime(0);setPlaying(false);setReplayEnd(null);setInspected(null);}}}><label htmlFor="match-seed">Reproducible match seed</label><div><input id="match-seed" type="number" min="0" max="4294967295" value={seedInput} onChange={e=>setSeedInput(e.target.value)} required/><button>Load</button></div></form>
+          <button onClick={()=>{setSeed(n=>n+1);setSeedInput(String(seed+1));setTime(0);setPlaying(false);setReplayEnd(null);setInspected(null)}}>Generate another match</button>
         </section>
       </aside>
     </div>
