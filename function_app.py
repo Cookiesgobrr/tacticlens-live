@@ -112,14 +112,14 @@ async def live_generate(req: func.HttpRequest) -> func.HttpResponse:
         return respond({"status": "invalid_input"}, 400)
     try:
         from api.live_moments import generate_once
-        from api.precompute_eleven import trial_preflight
+        from api.live_cost_guard import cloud_trial_preflight
         from api.eleven_agents import ElevenFoundryBackend
         seed = int(req.route_params["seed"])
         second = float(req.route_params["at_second"])
         result = await generate_once(
             VerifiedBlobStore(), seed=seed, at_second=second,
             backend_factory=ElevenFoundryBackend,
-            preflight=trial_preflight,
+            preflight=cloud_trial_preflight,
         )
         return respond(result, 200 if result["status"] in ("published", "already_cached") else 409)
     except (ValueError, TypeError):
