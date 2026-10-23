@@ -17,11 +17,15 @@ The independent Python source verifier recalculates score, attempts, xG, chronol
 | Player | The selected scorer's actual listed role, attempts, goals, receipt and source shot; another selected player cannot inherit that card |
 | Broadcast | A concise score-and-scorer caption rather than the entire analysis paragraph |
 
-At 78:00 the Fan edition reads:
+The former Fan rendering at 78:00 was three short canonical statements:
+
+> Northport FC 3–2 Southbridge Athletic at 78:00. Northport FC have scored the last 3 goals of this match. S. Grant scored for Northport FC at 78:00.
+
+The new Fan edition connects the same verified state to the developing story:
 
 > 78:00 — Northport are ahead! S. Grant puts Northport in front, Northport FC 3–2 Southbridge Athletic. Northport were two goals down; three unanswered goals have turned it into a lead. The equaliser came at 76:25; 95 seconds later, the scoreboard has turned again. S. Grant has supplied all three Northport goals, this latest finish coming from 12.2 metres.
 
-The goal is `SIM-82-01629`, its source shot is `SIM-82-01628`, and the earlier equaliser is `SIM-82-01597`. All three already exist in the original timeline. A lead change is not labelled a win until full time. At 78:00 the match has 20 attempts, not the final 22. No card appears before its event; cards expire after 120 match seconds. JSON exports reproduce the selected displayed text and sentence evidence. VTT uses the deliberately shorter Broadcast edition and ends no later than the current replay time.
+The goal is `SIM-82-01629`, its source shot is `SIM-82-01628`, and the earlier equaliser is `SIM-82-01597`. All three already exist in the original timeline. A lead change is not labelled a win until full time. At 78:00 the match has 20 attempts, not the final 22. No card appears before its event; cards expire after 120 match seconds. JSON exports reproduce the selected displayed text and sentence evidence. VTT uses the deliberately shorter Broadcast edition, puts source IDs in non-visible NOTE metadata, and ends no later than the current replay time.
 
 ## Team formations
 

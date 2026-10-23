@@ -15,6 +15,7 @@ try{
   browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']}: {})});
   const page=await browser.newPage({viewport:{width:1440,height:1050}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error'&&/Encountered two children|same key|unique.*key/i.test(m.text()))errors.push(m.text())});
   await page.goto('http://127.0.0.1:5179');
   await page.locator('.new-pitch3d canvas').waitFor();
   await page.getByRole('button',{name:'2D pitch',exact:true}).click();
@@ -137,6 +138,9 @@ try{
   assert.ok(shortCaptions.includes('01:18:00.250 --> 01:18:05.000'));
   assert.ok(shortCaptions.includes('S. Grant puts Northport in front: Northport 3–2 Southbridge.'));
   assert.ok(!shortCaptions.includes('95 seconds later'),'VTT uses the concise Broadcast edition');
+  assert.ok(shortCaptions.includes('NOTE Precomputed Foundry evidence plan; authored Broadcast grammar'));
+  assert.ok(shortCaptions.split('01:18:00.250 -->')[0].includes('SIM-82-01629'));
+  assert.ok(!shortCaptions.split('01:18:00.250 -->')[1].includes('SIM-82-'),'Sources stay in VTT NOTE metadata, outside visible captions');
   await page.getByRole('button',{name:'Club supporter',exact:true}).click();
   await page.getByLabel('Follow team',{exact:true}).selectOption('1');
   assert.ok((await aiMoment.innerText()).includes('Southbridge supporters'));
@@ -203,6 +207,8 @@ try{
   assert.deepEqual(f2Report.provenance.formations,['4-4-2','4-3-3']);
   await page.getByRole('spinbutton',{name:'Reproducible match seed'}).fill('82');await page.getByRole('button',{name:'Load',exact:true}).click();
   await timeline.fill('0');
+  assert.equal(await page.locator('.match-highlights').count(),1,'Seed switching must retain one highlight panel');
+  assert.equal(await page.locator('.formation-diagrams').count(),1,'Seed switching must retain one formation panel');
   await page.getByRole('button',{name:'Goals',exact:true}).click();
   assert.equal(await page.locator('.highlight-track button').count(),0,'Live highlights must not expose future goals');
   await page.getByRole('checkbox',{name:/Full-match review/}).check();

@@ -41,7 +41,7 @@ export default function FoundryMoment({card,pack,audience,match,time,onSeek,onRe
     const text=edition.text;
     const end=Math.floor(Math.min(time,card.moment.atSecond+8)*1000)/1000;
     const payload=format==='json'?JSON.stringify({...commentaryExport(match,card,audience,time),provider:pack.provider,model:pack.model,generatedAt:pack.generatedAt,card,trace:pack.trace},null,2):
-      `WEBVTT\n\nNOTE Precomputed Foundry editorial selection | ${pack.matchId}\n\n`+(end>card.moment.atSecond?`${card.moment.id}\n${vttTimestamp(card.moment.atSecond)} --> ${vttTimestamp(end)}\n${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}\n${[...new Set(edition.lines.flatMap(l=>l.evidenceIds))].join(' · ')}\n`:'');
+      `WEBVTT\n\nNOTE Precomputed Foundry evidence plan; authored Broadcast grammar | ${pack.matchId}\nEvidence: ${[...new Set(edition.lines.flatMap(l=>l.evidenceIds))].join(' · ')}\n\n`+(end>card.moment.atSecond?`${card.moment.id}\n${vttTimestamp(card.moment.atSecond)} --> ${vttTimestamp(end)}\n${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}\n`:'');
     const url=URL.createObjectURL(new Blob([payload],{type:format==='json'?'application/json':'text/vtt'}));
     const a=document.createElement('a');a.href=url;a.download=`${pack.matchId}-AI-${card.moment.atSecond}-${format==='vtt'?'broadcast':audience}.${format}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
