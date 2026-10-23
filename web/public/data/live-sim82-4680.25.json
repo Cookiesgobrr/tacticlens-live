@@ -1,0 +1,290 @@
+{
+  "schemaVersion": "tacticlens.live-publication.v1",
+  "authorizationId": "issue40-seed82-winner",
+  "sourceSha256": "d67670f7cb63452b24e05dcb88550036386e0dee56592e186c6d45d0306cc52d",
+  "engineSha256": "961d4746c6996e30d1289583bc114387a002bb5ef0db23328b392056970f5e5d",
+  "generationStartedAt": "2026-10-23T15:57:22.303672+00:00",
+  "generationFinishedAt": "2026-10-23T15:57:28.521881+00:00",
+  "authorizationExhausted": true,
+  "limits": {
+    "modelCalls": 3,
+    "outputTokensPerCall": 1000,
+    "inputBytesPerCall": 16000,
+    "automaticRetries": 0
+  },
+  "pack": {
+    "schemaVersion": "tacticlens.foundry11.v1",
+    "status": "verified",
+    "provider": "microsoft-foundry",
+    "model": "gpt-4.1-mini",
+    "matchId": "SIM-82",
+    "seed": 82,
+    "generatedAt": "2026-10-23T15:57:28.521881+00:00",
+    "cards": [
+      {
+        "moment": {
+          "id": "SIM-82@4680.25",
+          "matchId": "SIM-82",
+          "seed": 82,
+          "atSecond": 4680.25,
+          "player": 9,
+          "team": 0,
+          "checks": {
+            "score": [
+              3,
+              2
+            ],
+            "shots": [
+              14,
+              6
+            ],
+            "xg": [
+              1.78,
+              0.626
+            ],
+            "recentShots": [
+              3,
+              0
+            ],
+            "previousShots": [
+              2,
+              1
+            ],
+            "run": 3,
+            "completedBuildup": 2,
+            "playerGoals": 3,
+            "playerShots": 12,
+            "goalId": "SIM-82-01629",
+            "shotId": "SIM-82-01628"
+          },
+          "claims": [
+            {
+              "id": "score",
+              "kind": "score",
+              "text": "Northport FC 3–2 Southbridge Athletic at 78:00.",
+              "evidenceIds": [
+                "SIM-82-00282",
+                "SIM-82-00826",
+                "SIM-82-01053",
+                "SIM-82-01597",
+                "SIM-82-01629"
+              ]
+            },
+            {
+              "id": "totals",
+              "kind": "totals",
+              "text": "20 shots and 2.41 combined synthetic xG so far.",
+              "evidenceIds": [
+                "SIM-82-00101",
+                "SIM-82-00130",
+                "SIM-82-00281",
+                "SIM-82-00384",
+                "SIM-82-00425",
+                "SIM-82-00444",
+                "SIM-82-00448",
+                "SIM-82-00509",
+                "SIM-82-00619",
+                "SIM-82-00825",
+                "SIM-82-00849",
+                "SIM-82-00947",
+                "SIM-82-00974",
+                "SIM-82-01052",
+                "SIM-82-01291",
+                "SIM-82-01337",
+                "SIM-82-01384",
+                "SIM-82-01537",
+                "SIM-82-01596",
+                "SIM-82-01628"
+              ]
+            },
+            {
+              "id": "activity",
+              "kind": "activity",
+              "text": "Shot activity in the last ten minutes: Northport FC 3, Southbridge Athletic 0; in the preceding ten minutes: 2 and 1. This measures attempts, not tactical causation.",
+              "evidenceIds": [
+                "SIM-82-01291",
+                "SIM-82-01337",
+                "SIM-82-01384",
+                "SIM-82-01537",
+                "SIM-82-01596",
+                "SIM-82-01628"
+              ]
+            },
+            {
+              "id": "team0",
+              "kind": "team",
+              "text": "Northport FC: 14 shots, 1.78 synthetic xG and 3 goals.",
+              "evidenceIds": [
+                "SIM-82-00130",
+                "SIM-82-00444",
+                "SIM-82-00448",
+                "SIM-82-00509",
+                "SIM-82-00619",
+                "SIM-82-00849",
+                "SIM-82-00947",
+                "SIM-82-00974",
+                "SIM-82-01052",
+                "SIM-82-01053",
+                "SIM-82-01291",
+                "SIM-82-01384",
+                "SIM-82-01537",
+                "SIM-82-01596",
+                "SIM-82-01597",
+                "SIM-82-01628",
+                "SIM-82-01629"
+              ]
+            },
+            {
+              "id": "team1",
+              "kind": "team",
+              "text": "Southbridge Athletic: 6 shots, 0.63 synthetic xG and 2 goals.",
+              "evidenceIds": [
+                "SIM-82-00101",
+                "SIM-82-00281",
+                "SIM-82-00282",
+                "SIM-82-00384",
+                "SIM-82-00425",
+                "SIM-82-00825",
+                "SIM-82-00826",
+                "SIM-82-01337"
+              ]
+            },
+            {
+              "id": "goal",
+              "kind": "goal",
+              "text": "S. Grant scored for Northport FC at 78:00.",
+              "evidenceIds": [
+                "SIM-82-01628",
+                "SIM-82-01629"
+              ]
+            },
+            {
+              "id": "chance",
+              "kind": "chance",
+              "text": "The source shot had 15.2% synthetic xG, from 12.2 metres at 17.7° off centre, with the nearest defender 2.2 metres away.",
+              "evidenceIds": [
+                "SIM-82-01628"
+              ]
+            },
+            {
+              "id": "sequence",
+              "kind": "sequence",
+              "text": "Northport FC completed 2 passes in the uninterrupted possession events recorded within fifteen seconds before the source shot. This sequence does not prove why the goal occurred.",
+              "evidenceIds": [
+                "SIM-82-01624",
+                "SIM-82-01625",
+                "SIM-82-01626",
+                "SIM-82-01627",
+                "SIM-82-01628"
+              ]
+            },
+            {
+              "id": "run",
+              "kind": "run",
+              "text": "Northport FC have scored the last 3 goals of this match.",
+              "evidenceIds": [
+                "SIM-82-01053",
+                "SIM-82-01597",
+                "SIM-82-01629"
+              ]
+            },
+            {
+              "id": "player",
+              "kind": "player",
+              "text": "S. Grant has 3 goals from 12 shots so far.",
+              "evidenceIds": [
+                "SIM-82-01053",
+                "SIM-82-01597",
+                "SIM-82-01629",
+                "SIM-82-00130",
+                "SIM-82-00444",
+                "SIM-82-00448",
+                "SIM-82-00849",
+                "SIM-82-00947",
+                "SIM-82-00974",
+                "SIM-82-01052",
+                "SIM-82-01291",
+                "SIM-82-01384",
+                "SIM-82-01537",
+                "SIM-82-01596",
+                "SIM-82-01628"
+              ]
+            }
+          ]
+        },
+        "angle": "score",
+        "selectedClaimIds": [
+          "score",
+          "team0",
+          "team1",
+          "activity",
+          "goal",
+          "chance",
+          "sequence",
+          "run",
+          "player"
+        ],
+        "modes": {
+          "fan": [
+            "score",
+            "run",
+            "player"
+          ],
+          "analyst": [
+            "chance",
+            "sequence",
+            "activity"
+          ],
+          "club_home": [
+            "team0",
+            "run",
+            "score"
+          ],
+          "club_away": [
+            "team1",
+            "score"
+          ],
+          "player": [
+            "player",
+            "chance",
+            "sequence"
+          ],
+          "broadcast": [
+            "score",
+            "goal"
+          ]
+        }
+      }
+    ],
+    "trace": [
+      {
+        "stage": "Insight",
+        "agent": "TacticLens11Insight",
+        "status": "complete",
+        "responseId": "resp_037907fe254cd217016adb83e49ec481909a4784178b94ffec",
+        "inputTokens": 1296,
+        "outputTokens": 45,
+        "elapsedMs": 1729
+      },
+      {
+        "stage": "Verification",
+        "agent": "TacticLens11Verification",
+        "status": "complete",
+        "responseId": "resp_06c8470775e4d46b016adb83e5a168819086dc6139a5a590e9",
+        "inputTokens": 1296,
+        "outputTokens": 23,
+        "elapsedMs": 1508
+      },
+      {
+        "stage": "Presentation",
+        "agent": "TacticLens11Presentation",
+        "status": "complete",
+        "responseId": "resp_0095181dd9acc7a0016adb83e7157081938f4b33b7d6e34c1e",
+        "inputTokens": 1398,
+        "outputTokens": 76,
+        "elapsedMs": 1527
+      }
+    ]
+  },
+  "generationDisabledVerifiedAt": "2026-10-23T15:57:30.165451+00:00"
+}

@@ -17,7 +17,9 @@
     "test:highlights": "node --experimental-strip-types scripts/check-highlights.mjs",
     "test:formations": "node --experimental-strip-types scripts/check-formations.mjs",
     "test:editorial": "node --experimental-strip-types scripts/check-editorial.mjs",
-    "test:tour": "node scripts/check-tour.mjs"
+    "test:tour": "node scripts/check-tour.mjs",
+    "test:live": "node --experimental-strip-types scripts/check-live-cache.mjs",
+    "test:live-browser": "node scripts/check-live-browser.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

@@ -19,6 +19,8 @@ The match studio connects the pitch, possession, passes, shots, xG, score and ex
 
 **Microsoft Foundry now explains the new 11v11 match.** Three distinct Microsoft Agent Framework agents made three genuine GPT-4.1-mini calls to select, independently review and compose evidence for **SIM-82**. Code independently verifies the facts and renders approved factual sentences. This is constrained AI editorial generation, not unrestricted model prose or new inference on every click. [Implementation and audit](docs/FOUNDRY_11V11.md) · [Submission package](docs/SUBMISSION.md).
 
+A separate, owner-authorized **78:00 live Foundry test** completed with exactly three calls. Its optional read-only replay uses a new verified cache; generation is disabled and the original showcase stays the default. [Execution, safeguards and replay instructions](docs/LIVE_AI_PRIVATE_PREVIEW.md).
+
 The primary UI defaults to seed 82, a naturally simulated 3–2 comeback. Other seeds remain available. Seed 82 and the classic population calibration remain unchanged. Other seeds in the UI use `formations-v2` and distinct `SIM-<seed>-F2` IDs. The older six-a-side source remains for reproducibility, with no public archive navigation; its `EVT-` evidence is never reused for SIM-82. [Broadcast contracts, versions and evaluation](docs/BROADCAST_EXPERIENCE.md).
 
 ## Run locally

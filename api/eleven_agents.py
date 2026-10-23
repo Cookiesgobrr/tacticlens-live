@@ -31,31 +31,34 @@ Do not add facts, extra fields, IDs, predictions or causal claims. Evidence sent
 
 
 class ElevenFoundryBackend:
-    def __init__(self):
+    def __init__(self, *, credential=None, async_client=None):
         from agent_framework import Agent
         from agent_framework.openai import OpenAIChatClient
         from azure.identity import AzureCliCredential, ManagedIdentityCredential
         from openai import AsyncOpenAI
-        credential = (ManagedIdentityCredential() if os.environ.get("TACTICLENS_LIVE_AI_ENABLED", "").lower() == "true"
-            else AzureCliCredential(process_timeout=30))\n        token = credential.get_token("https://cognitiveservices.azure.com/.default").token
-        self.http = AsyncOpenAI(base_url="https://tarunjacob2927-8313-resource.services.ai.azure.com/openai/v1",
+        credential = credential or (ManagedIdentityCredential() if os.environ.get("TACTICLENS_LIVE_AI_ENABLED", "").lower() == "true"
+            else AzureCliCredential(process_timeout=30))
+        token = credential.get_token("https://cognitiveservices.azure.com/.default").token
+        self.http = async_client or AsyncOpenAI(base_url="https://tarunjacob2927-8313-resource.services.ai.azure.com/openai/v1",
             api_key=token, max_retries=0, timeout=60)
         client = OpenAIChatClient(model="gpt-4.1-mini", async_client=self.http)
         self.agents = {stage: Agent(client=client, name=f"TacticLens11{stage}", instructions=instructions)
             for stage, instructions in [("Insight", INSIGHT), ("Verification", VERIFICATION), ("Presentation", PRESENTATION)]}
-        self.trace, self.responses = [], []
+        self.trace, self.responses, self.attempts = [], [], []
 
     async def _ask(self, stage, payload):
-        if len(self.trace) >= 3:
+        if len(self.attempts) >= 3 or stage != ("Insight", "Verification", "Presentation")[len(self.attempts)]:
             raise RuntimeError("Three-call ceiling reached")
         # Azure JSON mode requires "JSON" in an input message, even when the
         # separate instructions field already requires JSON.
         message = "Return JSON only.\n" + json.dumps(payload, separators=(",", ":"))
-        if len(message) > 160000:
+        live = os.environ.get("TACTICLENS_LIVE_AI_ENABLED", "").lower() == "true"
+        if len(message.encode("utf-8")) > (16000 if live else 160000):
             raise ValueError("Input budget exceeded")
+        self.attempts.append(stage)  # Count before transport; a failure consumes the attempt.
         start = time.monotonic()
         response = await self.agents[stage].run(message,
-            options={"max_tokens": 6000, "temperature": 0, "response_format": {"type": "json_object"}, "store": False})
+            options={"max_tokens": 1000 if live else 6000, "temperature": 0, "response_format": {"type": "json_object"}, "store": False})
         usage = response.usage_details or {}
         self.trace.append(dict(stage=stage, agent=f"TacticLens11{stage}", status="complete", responseId=response.response_id,
             inputTokens=usage.get("input_token_count", 0), outputTokens=usage.get("output_token_count", 0),

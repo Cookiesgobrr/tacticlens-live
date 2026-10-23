@@ -310,3 +310,5 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 .tour-actions .tour-next{background:#00ff85;color:#230029;font-weight:800;padding:11px 14px;min-width:92px}
 @media(max-width:600px){.tour-dialog{padding:15px}.tour-dialog h2{font-size:22px}.tour-dialog p{font-size:13px}.tour-reopen{padding:7px!important;font-size:11px!important}}
 @media(prefers-reduced-motion:reduce){.tour-spotlight{transition:none}}
+
+.live-cache-preview{margin:14px 0;border-block:1px solid var(--line);padding:12px 0;font-size:12px}.live-cache-preview summary{cursor:pointer;color:#c5b8cf}.live-cache-preview label{display:flex;align-items:center;gap:8px;margin-top:14px}.live-cache-preview p{font-size:12px!important;margin:12px 0!important;color:var(--green)}.live-cache-preview small{display:block;font-size:11px;line-height:1.7;color:var(--muted)}
