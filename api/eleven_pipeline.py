@@ -13,7 +13,10 @@ ANGLES = {"score", "chance", "sequence", "activity", "run", "player"}
 
 
 def validate_source(source: dict) -> None:
-    if source.get("schemaVersion") != "tacticlens.source11.v1" or source.get("seed") != 82 or source.get("matchId") != "SIM-82":
+    seed = source.get("seed")
+    if (source.get("schemaVersion") != "tacticlens.source11.v1"
+            or type(seed) is not int or not 1 <= seed <= 4294967295
+            or source.get("matchId") != f"SIM-{seed}"):
         raise ValueError("Wrong source match")
     players, events = source["players"], source["events"]
     if len(players) != 22 or [p["id"] for p in players] != list(range(22)):
@@ -23,7 +26,7 @@ def validate_source(source: dict) -> None:
     seen, resolved = {}, set()
     last_time = -1
     for index, e in enumerate(events):
-        if e["id"] != f"SIM-82-{index+1:05d}" or not math.isfinite(e["time"]) or not last_time <= e["time"] <= 5400:
+        if e["id"] != f"SIM-{seed}-{index+1:05d}" or not math.isfinite(e["time"]) or not last_time <= e["time"] <= 5400:
             raise ValueError("Invalid source ID/time")
         last_time = e["time"]
         if type(e["player"]) is not int or not 0 <= e["player"] < 22 or players[e["player"]]["team"] != e["team"]:
@@ -59,7 +62,8 @@ def validate_source(source: dict) -> None:
 def verify_moment(source: dict, moment: dict) -> None:
     """Recalculate numerical facts in Python from the original event prefix."""
     at = moment["atSecond"]
-    if moment["seed"] != 82 or moment["matchId"] != "SIM-82" or moment["id"] != f"SIM-82@{at:g}":
+    if (moment["seed"] != source["seed"] or moment["matchId"] != source["matchId"]
+            or moment["id"] != f"{source['matchId']}@{at:g}"):
         raise ValueError("Wrong moment identity")
     visible = [e for e in source["events"] if e["time"] <= at]
     goals = [e for e in visible if e["type"] == "goal"]
@@ -141,14 +145,25 @@ def check_presentation(source: dict, proposal: dict, presentation: Any) -> list[
     return result
 
 
-async def run_eleven_pipeline(source: dict, backend) -> dict:
+async def run_eleven_pipeline(source: dict, backend, *, moment_at: float | None = None) -> dict:
+    """Verify the entire source before showing agents a *single* approved moment.
+
+    The full batch continues to behave exactly as before when moment_at is
+    omitted. Live mode never transmits future moments to an agent.
+    """
     validate_source(source)
-    facts = {"matchId": source["matchId"], "seed": 82, "moments": source["moments"]}
-    proposal = check_proposal(source, await backend.propose(facts))
+    scoped = source
+    if moment_at is not None:
+        moments = [m for m in source["moments"] if m["atSecond"] == moment_at]
+        if len(moments) != 1:
+            raise ValueError("Only a logged, preapproved goal/half/full moment is eligible")
+        scoped = {**source, "moments": moments}
+    facts = {"matchId": source["matchId"], "seed": source["seed"], "moments": scoped["moments"]}
+    proposal = check_proposal(scoped, await backend.propose(facts))
     review = await backend.verify(facts, proposal)
     if (not isinstance(review, dict) or set(review) != {"approved", "checkedMomentIds", "issues"}
             or review["approved"] is not True or review["issues"] != []
-            or review["checkedMomentIds"] != [m["id"] for m in source["moments"]]):
+            or review["checkedMomentIds"] != [m["id"] for m in scoped["moments"]]):
         raise ValueError("Verification agent vetoed publication")
-    cards = check_presentation(source, proposal, await backend.present(facts, proposal))
+    cards = check_presentation(scoped, proposal, await backend.present(facts, proposal))
     return {"cards": cards, "decisions": {"insight": proposal, "verification": review}}
