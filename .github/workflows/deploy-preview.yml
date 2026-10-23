@@ -40,3 +40,34 @@ jobs:
           path: web/dist
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  review:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - name: Prepare browser
+        timeout-minutes: 10
+        run: |
+          browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$browser_path" ]; then
+            echo "CHROMIUM_PATH=$browser_path" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Review the actual public deployment
+        run: npm run test:production
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-deployment-review
+          path: web/test-results/production

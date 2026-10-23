@@ -63,7 +63,7 @@ CI runs the backend tests, both populations, analysis/export checks, TypeScript/
 | `web/src/formations.ts` | Deterministic shape/role/line inputs; versioned movement, protected seed 82 |
 | `web/src/broadcastCamera.ts`, `MatchTimeline.tsx`, `matchHighlights.ts` | Camera composition/zoom, prefix-only highlight selection and coherent replays |
 | `web/src/MatchPitch3D.tsx` | Presentation of the same current frame; no independent simulation |
-| `web/src/momentIntelligence.ts`, `FoundryMoment.tsx` | Prefix-bound Foundry cache validation, audience compositions, trace and evidence clicks |
+| `web/src/momentIntelligence.ts`, `editorialCommentary.ts`, `FoundryMoment.tsx` | Prefix-bound Foundry cache validation, audience compositions, trace and evidence clicks |
 | `api/eleven_pipeline.py`, `eleven_agents.py`, `precompute_eleven.py` | Independent source checks, three real agents and capped operator-only precomputation |
 | `web/src/matchAnalysis.ts` | Deterministic audience explanations, totals and stat-label placement |
 | `web/src/matchEvidence.ts` | Replay-time report/captions and strict deterministic report audit |
@@ -73,4 +73,4 @@ CI runs the backend tests, both populations, analysis/export checks, TypeScript/
 
 All teams, players and match events are fictional. No external league match data, footage or official marks are included. Coordinates are simulated, not real tracking. xG is a transparent synthetic probability model, not calibrated to professional football. The simulator currently simplifies restarts and has no offside, fouls/cards, fatigue or substitutions. See the [full methodology and limitations](docs/evaluation/README.md).
 
-This is a hackathon prototype. The demo does not claim predictive accuracy or professional tracking. The 11v11 Foundry evidence is genuine and precomputed; its factual wording is constrained to audited event claims.
+This is a hackathon prototype. The demo does not claim predictive accuracy or professional tracking. The 11v11 Foundry evidence is genuine and precomputed; its original audience-specific coverage is compiled from audited event claims. Detailed formation profiles separate measured positioning from Foundry-selected match context. See [the editorial and formation verification contract](docs/EDITORIAL_CONTRACT.md).

@@ -42,6 +42,7 @@ jobs:
       - run: npm run test:analysis
       - run: npm run test:evidence
       - run: npm run test:intelligence
+      - run: npm run test:editorial
       - run: npm run build
       - name: Prepare browser
         timeout-minutes: 10

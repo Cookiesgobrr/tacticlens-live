@@ -26,8 +26,8 @@ For a judge demonstration, deliberately enable **Full-match review (reveals resu
 | 0:12–0:28 | Enable full-match review, filter Goals, click **0–2 at 39:03**. Let the source shot and goal play. | “Southbridge lead two-nil. This is a naturally simulated result, not a score written for the demo.” |
 | 0:28–0:40 | Replay **1–2 at 50:10**. | “Northport pull one back. Genuine Foundry agents have selected and verified the evidence behind this match.” |
 | 0:40–0:58 | Replay **2–2 at 76:25**, then **3–2 at 78:00**. Keep the broadcast camera on the final shot. | “Two goals ninety-five seconds apart complete the turnaround. The scorer, ball flight, score and explanation all refer to the same events.” |
-| 0:58–1:18 | Switch Fan → Analyst → Club supporter (Southbridge) → Player (S. Grant). | “The same verified facts become different evidence compositions: the fan story, the chance geometry, the opponent's view and the player's contribution. The camera and highlight priorities follow the perspective.” |
-| 1:18–1:32 | Expand the agent trace. Show the three actual executions and export AI JSON / VTT. | “Insight, Verification and Presentation are three separate Microsoft Agent Framework agents using GPT-4.1-mini. Code independently checks facts and controls factual wording. These are real cached executions, not simulated live activity.” |
+| 0:58–1:18 | Switch Fan → Analyst → Club supporter (Southbridge) → Player (S. Grant). | “The same verified facts become distinct editorial treatments: the fan story, the chance geometry, the opponent's view and the player's contribution. The camera and highlight priorities follow the perspective.” |
+| 1:18–1:32 | Briefly open Team formations, then expand the agent trace and show the three actual executions / exports. | “Insight, Verification and Presentation are three separate Microsoft Agent Framework agents using GPT-4.1-mini. Code independently checks facts and controls wording. Formation profiles add verified positional measurements; the marked Foundry context supplies selected match evidence. These are real cached executions, not simulated live activity.” |
 | 1:32–1:43 | Click source shot **SIM-82-01628**. Rewind just before the winner; briefly toggle 2D. | “Each explanation links to evidence. Rewind before the winner and both its result and AI card disappear. The 2D and 3D views share the same coordinates.” |
 | 1:43–1:50 | Return to 3D; seek to **90:00** and collapse the audit. | “A three-two comeback, twenty-two shots, 2.57 synthetic xG. Three hundred deterministic matches tested across the original and formation engines. No inference calls while you watch.” |
 
@@ -37,7 +37,7 @@ A reproducible silent capture is available with `cd web && npm run test:producti
 
 - Goal times in the first table are displayed football minutes. The exact underlying seconds are **809**, **2343.75**, **3010**, **4585.25**, **4680.25**. Seeking to 78:00.00 is still just before the winner; use Next AI moment and let it play through.
 - At the winning goal there are **20 shots and about 2.41 xG** so far. The **22 shots / 2.57 xG** figures apply at full time; do not present those full-match totals early.
-- The AI is **precomputed, constrained editorial generation**: actual agents choose evidence and audience ordering; deterministic code renders the approved fact sentences. Do not claim unrestricted LLM prose, predictive accuracy, real tracking or fresh inference on each click.
+- The AI is **precomputed, constrained editorial generation**: actual agents choose evidence and audience ordering; original constrained editorial grammar renders the richer paragraphs. The model did not write the new full paragraphs. Do not claim unrestricted LLM prose, predictive accuracy, real tracking or fresh inference on each click.
 - The public cache contains seven genuine moments, including halftime and fulltime. Cards remain active for two match minutes. Other seeds, uncovered times or unmatched player views deliberately show a labelled deterministic fallback.
 - Keep the agent trace collapsed during normal match viewing; expand it only for the proof segment. Avoid showing private Azure dashboards or credentials in the recording.
 - Use a clear voiceover or captions. Upload an under-two-minute video to an accepted public/unlisted host and verify it plays without a judge signing in.
@@ -50,5 +50,6 @@ A reproducible silent capture is available with `cd web && npm run test:producti
 - Broadcast/camera/version contracts: `docs/BROADCAST_EXPERIENCE.md`
 - Engine/evaluation: `web/src/footballEngine.ts`, `docs/evaluation/README.md`
 - Source-event and broadcast exports: `docs/EVIDENCE_EXPORT.md`
+- Editorial/formation provenance: `docs/EDITORIAL_CONTRACT.md`
 - Foundry boundary: `docs/PUBLIC_FOUNDRY_DASHBOARD.md`
 - Final submission/AI integration: https://github.com/Cookiesgobrr/tacticlens-live/issues/30
