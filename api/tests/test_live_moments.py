@@ -76,6 +76,7 @@ def test_disabled_never_touches_backend(monkeypatch):
 
 def test_unapproved_seed_fails_without_credit(monkeypatch):
     monkeypatch.setenv("TACTICLENS_LIVE_AI_ENABLED","true")
+    monkeypatch.setenv("TACTICLENS_LIVE_APPROVED_MOMENTS","82/4680.25,82/2700,15/2700")
     called=[]
     outcome=run(Store(),seed=987,at_second=2700,
         backend_factory=lambda:called.append("backend"),
