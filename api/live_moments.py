@@ -56,6 +56,12 @@ async def generate_once(
     if not enabled():
         return {"status": "disabled"}
     ident = _identity(seed, at_second)
+    # Explicit, finite operator allowlist: a leaked Function key cannot
+    # generate arbitrary moments even in a privately approved source.
+    allowed = set(filter(None, (v.strip() for v in
+        os.environ.get("TACTICLENS_LIVE_APPROVED_MOMENTS", "").split(","))))
+    if ident not in allowed or len(allowed) > 3:
+        return {"status": "not_approved_for_generation"}
     existing = get_cached(store, seed, at_second)
     if existing["status"] == "ready":
         return {"status": "already_cached"}
