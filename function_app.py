@@ -38,7 +38,7 @@ class VerifiedBlobStore:
     def claim(self, name: str) -> bool:
         try:
             self.container.get_blob_client(name).upload_blob(
-                json.dumps({"state": "reserved", "at_second": 4500}),
+                json.dumps({"state": "reserved", "identity": name, "maxModelCalls": 3}),
                 overwrite=False, content_settings=ContentSettings(content_type="application/json")
             )
             return True
@@ -54,7 +54,7 @@ class VerifiedBlobStore:
 
 def respond(payload: dict, code: int = 200) -> func.HttpResponse:
     return func.HttpResponse(json.dumps(payload, ensure_ascii=False), status_code=code,
-                             mimetype="application/json")
+                             mimetype="application/json", headers={"Cache-Control": "no-store"})
 
 
 @app.route(route="verified", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
@@ -127,3 +127,15 @@ async def live_generate(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as exc:
         logging.error("Live AI generation failed: %s", type(exc).__name__)
         return respond({"status": "unavailable"}, 503)
+
+
+@app.route(route="live-preflight", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+def live_preflight(req: func.HttpRequest) -> func.HttpResponse:
+    """Operator-only management-plane checks; never initialize a model client."""
+    from api.live_cost_guard import cloud_trial_preflight
+    generation_enabled = os.environ.get("TACTICLENS_LIVE_AI_ENABLED", "").lower() == "true"
+    try:
+        checks = cloud_trial_preflight(require_enabled=False)
+        return respond(dict(status="protected", generationEnabled=generation_enabled, checks=checks))
+    except Exception as exc:
+        return respond(dict(status="blocked", errorType=type(exc).__name__, generationEnabled=generation_enabled), 409)

@@ -14,8 +14,8 @@ ACCOUNT = "tarunjacob2927-8313-resource"
 RESOURCE_GROUP = "rg-tarun.jacob2927-3851"
 
 
-def cloud_trial_preflight(*, credential=None, http_get=None):
-    if os.environ.get("TACTICLENS_LIVE_AI_ENABLED", "").lower() != "true":
+def cloud_trial_preflight(*, credential=None, http_get=None, require_enabled=True):
+    if require_enabled and os.environ.get("TACTICLENS_LIVE_AI_ENABLED", "").lower() != "true":
         raise RuntimeError("Live generation disabled")
     if credential is None:
         from azure.identity import ManagedIdentityCredential
