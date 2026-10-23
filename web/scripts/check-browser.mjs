@@ -8,7 +8,7 @@ let browser;
 try{
   let ready=false;
   for(let i=0;i<100;i++){
-    try{if((await fetch('http://127.0.0.1:5179')).ok){ready=true;break;}}catch{}
+    try{if((await fetch('http://127.0.0.1:5179/?tour=off')).ok){ready=true;break;}}catch{}
     await new Promise(r=>setTimeout(r,100));
   }
   assert.ok(ready,'Vite must start');
@@ -16,7 +16,7 @@ try{
   const page=await browser.newPage({viewport:{width:1440,height:1050}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error'&&/Encountered two children|same key|unique.*key/i.test(m.text()))errors.push(m.text())});
-  await page.goto('http://127.0.0.1:5179');
+  await page.goto('http://127.0.0.1:5179/?tour=off');
   await page.locator('.new-pitch3d canvas').waitFor();
   await page.getByRole('button',{name:'2D pitch',exact:true}).click();
   const pitch=page.locator('.new-pitch');await pitch.waitFor();
@@ -236,13 +236,13 @@ try{
   const badCache=JSON.parse(readFileSync(new URL('../public/data/foundry-sim82.json',import.meta.url),'utf8'));
   badCache.cards[0].moment.checks.score[0]=99;
   await tampered.route('**/data/foundry-sim82.json',route=>route.fulfill({json:badCache}));
-  await tampered.goto('http://127.0.0.1:5179');
+  await tampered.goto('http://127.0.0.1:5179/?tour=off');
   await tampered.getByRole('slider',{name:'Match timeline'}).fill('5400');
   await tampered.getByText('Foundry cache unavailable or rejected; showing deterministic insights.',{exact:true}).waitFor();
   assert.equal(await tampered.getByTestId('foundry-moment').count(),0);await tampered.close();
   const fallback=await browser.newPage();
   await fallback.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){if(type==='webgl'||type==='webgl2')return null;return original.call(this,type,...args)}});
-  await fallback.goto('http://127.0.0.1:5179');await fallback.locator('.new-pitch').waitFor();
+  await fallback.goto('http://127.0.0.1:5179/?tour=off');await fallback.locator('.new-pitch').waitFor();
   await fallback.getByRole('button',{name:'3D studio',exact:true}).click();
   await fallback.getByRole('status').filter({hasText:'3D graphics are unavailable'}).waitFor();
   assert.ok(await fallback.locator('.new-pitch').isVisible());
