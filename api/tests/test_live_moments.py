@@ -81,11 +81,12 @@ def test_unapproved_seed_fails_without_credit(monkeypatch):
     outcome=run(Store(),seed=987,at_second=2700,
         backend_factory=lambda:called.append("backend"),
         preflight=lambda:called.append("preflight"))
-    assert outcome["status"]=="unapproved_seed" and not called
+    assert outcome["status"]=="not_approved_for_generation" and not called
 
 
 def test_single_moment_cached_and_isolated(monkeypatch, source):
     monkeypatch.setenv("TACTICLENS_LIVE_AI_ENABLED","true")
+    monkeypatch.setenv("TACTICLENS_LIVE_APPROVED_MOMENTS","82/4680.25,82/2700,15/2700")
     storage=Store()
     storage.data["live/sources/82.json"]=source
     recorded=[]
@@ -107,6 +108,7 @@ def test_single_moment_cached_and_isolated(monkeypatch, source):
 
 def test_operator_guard_and_lock_survive_failure(monkeypatch,source):
     monkeypatch.setenv("TACTICLENS_LIVE_AI_ENABLED","true")
+    monkeypatch.setenv("TACTICLENS_LIVE_APPROVED_MOMENTS","82/4680.25,82/2700,15/2700")
     store=Store()
     store.data["live/sources/82.json"]=source
     credit=[]
@@ -125,6 +127,7 @@ def test_operator_guard_and_lock_survive_failure(monkeypatch,source):
 
 def test_reject_mismatched_source_before_model(monkeypatch,source):
     monkeypatch.setenv("TACTICLENS_LIVE_AI_ENABLED","true")
+    monkeypatch.setenv("TACTICLENS_LIVE_APPROVED_MOMENTS","82/4680.25,82/2700,15/2700")
     store=Store()
     store.data["live/sources/15.json"]=source
     with pytest.raises(ValueError):
