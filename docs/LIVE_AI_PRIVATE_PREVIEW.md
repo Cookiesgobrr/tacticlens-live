@@ -10,7 +10,7 @@ TacticLens now has a **private, event-triggered, one-moment-at-a-time Foundry ge
 - Durable Blob reservations `live/claims/{seed}/{second}.json` before opening agents. A failed or timed-out call never automatically retries.
 - Immutable per-moment result cache `live/results/{seed}/{second}.json`. All views of a cached moment incur zero new Foundry inference charges.
 - Private approved source `live/sources/{seed}.json`. Seed 82 can be exported with `node --experimental-strip-types web/scripts/export-ai-source.mjs`. **Do not make source blobs publicly writable.**
-- Disabled by default (`TACTICLENS_LIVE_AI_ENABLED` must be explicitly `true`), no arbitrary free-text input, no public generation routes, no trial upgrades or new resources.
+- Disabled by default (`TACTICLENS_LIVE_AI_ENABLED` must be explicitly `true`; `TACTICLENS_LIVE_APPROVED_MOMENTS` must list at most three allowed `seed/second` values), no arbitrary free-text input, no public generation routes, no trial upgrades or new resources.
 
 ## Crucial limitations — activation NOT complete
 
