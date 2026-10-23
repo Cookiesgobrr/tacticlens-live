@@ -3,6 +3,7 @@ import argparse
 import asyncio
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 from datetime import datetime, timezone
@@ -34,6 +35,11 @@ async def main():
     args = parser.parse_args()
     if not args.confirm_trial_credits:
         parser.error("Explicit trial-credit confirmation required. No calls made.")
+    target = Path(args.output)
+    temp = target.with_suffix(".pending.json")
+    # Reject an unusable destination before credential checks or paid requests.
+    if target.exists() or temp.exists():
+        raise FileExistsError("Refusing to overwrite an existing or pending publication")
     raw = Path(args.source).read_bytes()
     source = json.loads(raw)
     validate_source(source)
@@ -51,15 +57,17 @@ async def main():
         result = await run_eleven_pipeline(source, backend)
         pack = dict(schemaVersion="tacticlens.foundry11.v1", status="verified", provider="microsoft-foundry", model="gpt-4.1-mini",
             matchId="SIM-82", seed=82, generatedAt=datetime.now(timezone.utc).isoformat(), cards=result["cards"], trace=backend.trace)
-        target = Path(args.output)
         target.parent.mkdir(parents=True, exist_ok=True)
-        if target.exists():
-            raise FileExistsError("Refusing to overwrite an existing publication")
-        temp = target.with_suffix(".pending.json")
         temp.write_text(json.dumps(pack, ensure_ascii=False, indent=2)+"\n")
         # Browser-side gate regenerates the actual engine facts before publication.
         subprocess.run(["node", "--experimental-strip-types", str(ROOT/"web/scripts/check-ai-pack.mjs"), str(temp)], check=True, cwd=ROOT)
-        temp.rename(target)
+        review = artifact/"editorial-review.json"
+        subprocess.run(["node", "--experimental-strip-types", str(ROOT/"web/scripts/export-editorial-review.mjs"), str(review), str(temp)], check=True, cwd=ROOT)
+        from api.editorial_verification import verify_editorial_file
+        verify_editorial_file(review)
+        # Exclusive creation also prevents races after the preflight check.
+        os.link(temp, target)
+        temp.unlink()
         audit = dict(sourceSha256=hashlib.sha256(raw).hexdigest(), sourceEngine="web/src/footballEngine.ts",
             costProtection=protection, limits={"maxCalls": 3, "maxOutputTokensPerCall": 6000, "automaticRetries": 0},
             trace=backend.trace, responses=backend.responses, decisions=result["decisions"])

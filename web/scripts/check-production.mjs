@@ -50,9 +50,20 @@ try{
   assert.ok(Math.hypot(mesh.ball.x-expected.ball.x,mesh.ball.y-expected.ball.y,mesh.ball.z-expected.ball.z)<1e-5);
   await page.getByText('Agent trace, all evidence & broadcast exports',{exact:true}).click();
   await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:directory+'3d-production.png',fullPage:true});await linger(5000);
+  for(const text of ['Football, explained.','Simulated football ·','Ownership, movement, kickoffs and event sources validated','Original showcase engine · seed 82 preserved. Kickoff positions below; shapes adapt during play.'])assert.ok(!(await page.locator('body').innerText()).includes(text));
+  assert.equal(await page.locator('.agent-path').count(),0);
+  await page.locator('.formation-diagrams > summary').click();
+  await page.getByTestId('formation-team-0').waitFor();assert.equal(await page.locator('.formation-foundry').count(),2);
+  assert.equal(await page.getByRole('img',{name:/kickoff formation 4-3-3/}).count(),2);
+  await page.getByTestId('formation-team-0').scrollIntoViewIfNeeded();
+  await page.screenshot({path:directory+'formations-production.png',fullPage:true});
   assert.deepEqual(errors,[]);const video=page.video();await context.close();if(record&&video)renameSync(await video.path(),directory+'demo-silent.webm');
   const mobile=await browser.newPage({viewport:{width:390,height:844}});await mobile.goto(target+'?seed=82');await mobile.locator('.new-pitch3d canvas').waitFor();
   await mobile.getByRole('slider',{name:'Match timeline'}).fill('4680.25');await mobile.getByTestId('foundry-moment').waitFor();
-  assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await mobile.screenshot({path:directory+'mobile-production.png',fullPage:true});await mobile.close();
+  assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await mobile.screenshot({path:directory+'mobile-production.png',fullPage:true});
+  await mobile.locator('.formation-diagrams > summary').click();await mobile.getByTestId('formation-team-0').waitFor();
+  assert.ok((await mobile.getByTestId('formation-team-0').innerText()).includes('43.3 metres of outfield width'));
+  assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  await mobile.screenshot({path:directory+'formations-mobile-production.png',fullPage:true});await mobile.close();
   console.log(`Production verified: default broadcast, zoom, four real highlight replays, genuine Foundry personas/trace/exports, pre-winner rewind, 2D/3D coordinate parity and mobile. ${record?'Silent demonstration saved.':''}`);
 }finally{await browser.close();}

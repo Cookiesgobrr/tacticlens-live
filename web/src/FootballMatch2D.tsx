@@ -5,6 +5,7 @@ import { Pause, Play, RotateCcw, FastForward, ShieldCheck } from "lucide-react";
 import EvidenceExport from "./EvidenceExport";
 import FoundryMoment,{useVerifiedMatchAI,momentHeadline} from "./FoundryMoment";
 import {FORMATIONS} from "./formations";
+import TeamFormations from "./TeamFormations";
 import MatchTimeline from "./MatchTimeline";
 import {aiAudience,visibleAICard} from "./momentIntelligence";
 const MatchPitch3D=lazy(()=>import("./MatchPitch3D"));
@@ -39,7 +40,6 @@ export default function FootballMatch2D(){
   const aiCard=visibleAICard(ai.pack,time,lens,followTeam,selected);
   const issues=useMemo(()=>validateMatch(match),[match]);
   const current=atTime(match,time);
-  const kickoffFrame=useMemo(()=>atTime(match,0),[match]);
   const visible=eventsUntil(match,time);
   const recent=visible.slice(-8).reverse();
   const score:[number,number]=[0,0];
@@ -103,7 +103,7 @@ export default function FootballMatch2D(){
   return <div className="new-match" data-engine-version={match.engineVersion}>
     <div className="new-topbar">
       <div className="new-brand"><span>TL</span><strong>TACTICLENS</strong><small>Live</small></div>
-      <div className="new-topbar-right"><span>Football, explained.</span><a href="#match-intelligence">Microsoft Foundry intelligence ↗</a></div>
+      <div className="new-topbar-right"><a href="#match-intelligence">Microsoft Foundry intelligence ↗</a></div>
     </div>
     <div className="new-scorebar">
       <div className="new-club new-north"><span className="new-crest">N</span><div><small>HOME · {match.formations[0]}</small><strong>Northport FC</strong></div></div>
@@ -113,7 +113,7 @@ export default function FootballMatch2D(){
     <div className="new-layout">
       <main className="new-main">
         <div className="new-pitchhead">
-          <div className="match-title"><h1>The match</h1><span>Simulated football · {match.matchId}</span></div>
+          <div className="match-title"><h1>The match</h1><span>{match.matchId}</span></div>
           <div className="new-view-controls">
             <label className="new-stats-toggle"><input type="checkbox" checked={showPlayerStats}
               onChange={e=>setShowPlayerStats(e.target.checked)} aria-label="Player stats"/> Nearby player stats</label>
@@ -196,13 +196,13 @@ export default function FootballMatch2D(){
           <div className="new-shot-workspace"><svg viewBox="0 0 360 230" role="img" aria-label="Shots up to the replay time" className="new-shotmap"><rect x="5" y="5" width="350" height="220" rx="3" fill="#153e31" stroke="#5b8169"/><path d="M180 5V225 M5 60H60V170H5 M355 60H300V170H355" fill="none" stroke="#5b8169"/><circle cx="180" cy="115" r="29" fill="none" stroke="#5b8169"/>{pastShots.map(e=>{const goal=visible.some(r=>r.type==="goal"&&r.sourceId===e.id);return <g key={e.id} role="button" tabIndex={0} aria-label={`Inspect shot ${e.id}`} onKeyDown={k=>{if(k.key==="Enter")seekEvent(e)}} onClick={()=>seekEvent(e)} style={{cursor:"pointer"}}><title>{mtime(e.time)} · {((e.shotXg??0)*100).toFixed(1)}% xG{goal?" · Goal":""}</title><circle cx={5+e.x/105*350} cy={5+e.y/68*220} r={3+(e.shotXg??0)*22} fill={e.team===0?"#c6fa65":"#77aaff"} fillOpacity={goal?1:.35} stroke={e.team===0?"#c6fa65":"#77aaff"} strokeWidth={goal?2:1}/></g>})}</svg>
           <div><svg viewBox="0 0 600 160" role="img" aria-label="Cumulative xG up to replay time" className="new-xgchart"><path d="M25 10V130H575" fill="none" stroke="#486455"/>{[0,1,2,3,4].map(v=><g key={v}><text x="5" y={134-v*30} fill="#9eb9a9" fontSize="10">{v}</text><path d={`M25 ${130-v*30}H575`} stroke="#486455" opacity=".25"/></g>)}<path d={xgPath(0)} fill="none" stroke="#c6fa65" strokeWidth="2.5"/><path d={xgPath(1)} fill="none" stroke="#77aaff" strokeWidth="2.5"/><text x="25" y="152" fill="#9eb9a9" fontSize="11">00:00</text><text x="540" y="152" fill="#9eb9a9" fontSize="11">90:00</text></svg><p className="new-muted">Circle size indicates chance quality; solid circles are scored goals. Click a shot to inspect its frame. Simplified synthetic xG model, not real-world calibrated.</p><div className="new-xg-totals"><span>Northport <b>{expectedGoals[0].toFixed(2)} xG</b></span><span>Southbridge <b>{expectedGoals[1].toFixed(2)} xG</b></span></div></div></div>
         </section>
-        <details className="formation-diagrams"><summary>Team shapes · {match.formations.join(' / ')}</summary><p>{match.engineVersion==='classic-v1'?'Original showcase engine · seed 82 preserved.':'Formation engine v2 · seed-selected lines and support lanes.'} Kickoff positions below; shapes adapt during play.</p><div>{([0,1] as Side[]).map(team=><figure key={team}><figcaption>{team===0?'Northport':'Southbridge'} · {match.formations[team]}</figcaption><svg viewBox="0 0 180 170" role="img" aria-label={`${team===0?'Northport':'Southbridge'} kickoff formation ${match.formations[team]}`}><rect x="5" y="5" width="170" height="160" fill="#174130"/><path d="M5 165H175 M65 5V25H115V5" fill="none" stroke="#88a593"/>{match.players.filter(p=>p.team===team).map(p=>{const f=kickoffFrame.people[p.id];return <g key={p.id}><circle cx={5+f.y/68*170} cy={5+(team===0?f.x:105-f.x)/52.5*160} r="7" fill={team===0?'#00ff85':'#77aaff'}/><text x={5+f.y/68*170} y={8+(team===0?f.x:105-f.x)/52.5*160} textAnchor="middle" fontSize="7" fill="#15121b">{p.number}</text></g>})}</svg></figure>)}</div></details>
-        <div className="new-footnote"><ShieldCheck size={13}/> Fictional clubs. Deterministic simulation. AI selects verified evidence; match statistics use the replay clock. Player gestures are visual approximations.</div>
+        <TeamFormations key={match.matchId} match={match} time={time} card={visibleAICard(ai.pack,time,"fan",followTeam,selected)} onReplay={replayEvent}/>
+        <details className="new-footnote match-about"><summary><ShieldCheck size={13}/> About this match & AI</summary><p>Fictional clubs and players; deterministic simulated match data and synthetic xG, not real-world tracking or calibrated professional probabilities. Microsoft Foundry selects evidence in a precomputed three-agent pipeline. Commentary uses original, authored editorial grammar around that verified plan, rather than unrestricted model-written prose. Formation geometry and sampled positioning are calculated from the simulation. Player gestures are animation approximations. No model calls occur during replay.</p></details>
       </main>
       <aside className="new-sidebar">
         <section className="new-analysis intelligence-panel" id="match-intelligence"><div className="foundry-brand"><span className="foundry-mark" aria-hidden="true"><i/><i/><i/><i/></span><strong>Microsoft Foundry</strong><span>{ai.pack?'Verified cache':ai.state==='loading'?'Loading…':'Deterministic fallback'}</span></div>
           <h2>Match intelligence</h2>
-          {ai.pack&&<div className="agent-path" aria-label="Completed agent pipeline">{ai.pack.trace.map((stage,i)=><span key={stage.stage} title={`${stage.agent}: ${((stage.elapsedMs)/1000).toFixed(1)}s, ${stage.inputTokens+stage.outputTokens} tokens`}><b>✓</b> {stage.stage}{i<2&&<i aria-hidden="true">→</i>}</span>)}</div>}
+
           <div className="new-lenses" aria-label="Audience perspective">{(["fan","analyst","club","player"] as Lens[]).map(view=><button key={view} aria-pressed={lens===view} onClick={()=>{setLens(view);setMode(view==="analyst"?"analyst":view==="player"?"player":"fan");setCamera(view==="analyst"?"tactical":view==="player"?"player":"broadcast");}}>{view==="club"?"Club supporter":view[0].toUpperCase()+view.slice(1)}</button>)}</div>
           {aiCard&&ai.pack?<FoundryMoment card={aiCard} pack={ai.pack} audience={aiAudience(lens,followTeam)} match={match} time={time} onSeek={seekEvent} onReplay={replayEvent}/>:<><span className="deterministic-label">Deterministic commentary</span><h4>{story.headline}</h4><p>{story.text}</p><div className="new-evidence-links">{story.evidence.map(e=><button key={e.id} onClick={()=>seekEvent(e)}>{mtime(e.time)} · {e.type} <small>{e.id}</small></button>)}</div><p className="new-muted">{ai.state==='ready'?'Precomputed Foundry evidence appears for the selected player and replay time.':ai.state==='other-seed'?'Deterministic insights for this seed. The Foundry showcase uses seed 82.':ai.state==='loading'?'Loading the optional Foundry cache; deterministic insights remain available.':'Foundry cache unavailable or rejected; showing deterministic insights.'}</p></>}
           <p className="new-muted">{mtime(time)} recap · {totals.score[0]}–{totals.score[1]} · {totals.shots[0]+totals.shots[1]} shots · {(totals.xg[0]+totals.xg[1]).toFixed(2)} xG. Calculated from events at or before the replay time.</p>
@@ -252,8 +252,7 @@ export default function FootballMatch2D(){
         </details>
         <section className="new-card new-validation">
           <h3>Explore another match</h3>
-          {issues.length===0?<p className="new-ok">22 players · Ownership, movement, kickoffs and event sources validated</p>:
-            <p className="new-error">{issues.join("; ")}</p>}
+          {issues.length>0&&<p className="new-error" role="alert">{issues.join("; ")}</p>}
           <form className="new-seed-form" onSubmit={e=>{e.preventDefault();if(/^\d+$/.test(seedInput)&&+seedInput<=4294967295){setSeed(+seedInput);setTime(0);setPlaying(false);setReplayEnd(null);setInspected(null);}}}><label htmlFor="match-seed">Reproducible match seed</label><div><input id="match-seed" type="number" min="0" max="4294967295" value={seedInput} onChange={e=>setSeedInput(e.target.value)} required/><button>Load</button></div></form>
           <button onClick={()=>{setSeed(n=>(n+1)>>>0);setSeedInput(String((seed+1)>>>0));setTime(0);setPlaying(false);setReplayEnd(null);setInspected(null)}}>Generate another match</button>
         </section>
