@@ -6,6 +6,7 @@ import EvidenceExport from "./EvidenceExport";
 import FoundryMoment,{useVerifiedMatchAI,momentHeadline} from "./FoundryMoment";
 import {FORMATIONS} from "./formations";
 import TeamFormations from "./TeamFormations";
+import NewUserTour from "./NewUserTour";
 import MatchTimeline from "./MatchTimeline";
 import {aiAudience,visibleAICard} from "./momentIntelligence";
 const MatchPitch3D=lazy(()=>import("./MatchPitch3D"));
@@ -14,6 +15,7 @@ type View="fan"|"analyst"|"player";
 export default function FootballMatch2D(){
   const [seed,setSeed]=useState(()=>{const value=new URLSearchParams(location.search).get("seed");return value!==null&&/^\d+$/.test(value)&&+value<=4294967295?+value:82;});
   const [seedInput,setSeedInput]=useState(String(seed));
+  const [tourRestart,setTourRestart]=useState(0);
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
   const [speed,setSpeed]=useState(1);
@@ -101,9 +103,10 @@ export default function FootballMatch2D(){
     parts.push(`H ${25+time/5400*550}`);return parts.join(" ");
   };
   return <div className="new-match" data-engine-version={match.engineVersion}>
+    <NewUserTour restartToken={tourRestart}/>
     <div className="new-topbar">
       <div className="new-brand"><span>TL</span><strong>TACTICLENS</strong><small>Live</small></div>
-      <div className="new-topbar-right"><a href="#match-intelligence">Microsoft Foundry intelligence ↗</a></div>
+      <div className="new-topbar-right"><button type="button" className="tour-reopen" onClick={()=>setTourRestart(n=>n+1)}>Take a tour</button><a href="#match-intelligence">Microsoft Foundry intelligence ↗</a></div>
     </div>
     <div className="new-scorebar">
       <div className="new-club new-north"><span className="new-crest">N</span><div><small>HOME · {match.formations[0]}</small><strong>Northport FC</strong></div></div>
