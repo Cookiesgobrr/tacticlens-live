@@ -1,5 +1,6 @@
 """Bounded Microsoft Agent Framework agents for the new 11v11 contract."""
 import json
+import os
 import time
 from api.foundry_agents import decode_json_object
 
@@ -33,9 +34,10 @@ class ElevenFoundryBackend:
     def __init__(self):
         from agent_framework import Agent
         from agent_framework.openai import OpenAIChatClient
-        from azure.identity import AzureCliCredential
+        from azure.identity import AzureCliCredential, ManagedIdentityCredential
         from openai import AsyncOpenAI
-        token = AzureCliCredential(process_timeout=30).get_token("https://cognitiveservices.azure.com/.default").token
+        credential = (ManagedIdentityCredential() if os.environ.get("TACTICLENS_LIVE_AI_ENABLED", "").lower() == "true"
+            else AzureCliCredential(process_timeout=30))\n        token = credential.get_token("https://cognitiveservices.azure.com/.default").token
         self.http = AsyncOpenAI(base_url="https://tarunjacob2927-8313-resource.services.ai.azure.com/openai/v1",
             api_key=token, max_retries=0, timeout=60)
         client = OpenAIChatClient(model="gpt-4.1-mini", async_client=self.http)
