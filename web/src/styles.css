@@ -290,3 +290,23 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 @media(max-width:650px){.formation-diagrams>.formation-grid{grid-template-columns:1fr;gap:28px}.formation-team figure{width:135px}.formation-team>header{padding-bottom:10px}.formation-team h3{font-size:17px}.formation-team>p,.formation-observed p,.formation-foundry p{font-size:13px}}
 
 .formation-template-label{font-size:10px;color:#b7adbf}.formation-comparison{border-top:1px solid var(--line);padding-top:16px;max-width:900px}
+
+
+/* First visit, optional tour: TacticLens broadcast visual language */
+.tour-reopen{background:transparent!important;border:1px solid #766782!important;color:#eee5f3!important;font-size:12px!important;padding:8px 12px!important;cursor:pointer}
+.tour-reopen:hover,.tour-reopen:focus-visible{border-color:var(--green)!important;color:var(--green)!important}
+.tour-root{position:fixed;inset:0;z-index:100000;pointer-events:none}
+.tour-click-shield{position:fixed;inset:0;background:#0d0812aa;pointer-events:auto}
+.tour-spotlight{position:fixed;border:2px solid #00ff85;outline:100vmax solid #0d081235;box-shadow:0 0 0 4px #00ff8538,0 0 18px #00ff8526;border-radius:5px;pointer-events:none;transition:top .18s ease,left .18s ease,width .18s ease,height .18s ease}
+.tour-dialog{position:fixed;z-index:2;box-sizing:border-box;max-width:calc(100vw - 24px);background:#37003c;color:#fff;border:1px solid #825b8d;box-shadow:0 14px 45px #000a;padding:19px 20px 18px;pointer-events:auto}
+.tour-progress,.tour-footer,.tour-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tour-progress span{font-size:11px;letter-spacing:.09em;color:#00ff85;font-weight:800}
+.tour-dialog button{font:inherit;cursor:pointer}
+.tour-progress button{border:0;background:none;color:#c5b3ce;font-size:12px;padding:6px}
+.tour-dialog h2{font:800 25px/1.16 'Space Grotesk',sans-serif;letter-spacing:-.7px;margin:15px 0 9px}
+.tour-dialog p{font-size:14px;line-height:1.55;color:#e2d6e6;margin:0 0 22px}
+.tour-steps{display:flex;gap:5px}.tour-steps span{height:5px;width:9px;background:#82708b}.tour-steps span.active{width:23px;background:#00ff85}
+.tour-actions button{border:0;background:transparent;color:white;font-size:12px;padding:11px}
+.tour-actions .tour-next{background:#00ff85;color:#230029;font-weight:800;padding:11px 14px;min-width:92px}
+@media(max-width:600px){.tour-dialog{padding:15px}.tour-dialog h2{font-size:22px}.tour-dialog p{font-size:13px}.tour-reopen{padding:7px!important;font-size:11px!important}}
+@media(prefers-reduced-motion:reduce){.tour-spotlight{transition:none}}

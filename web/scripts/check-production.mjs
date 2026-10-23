@@ -10,7 +10,7 @@ const context=await browser.newContext({viewport:{width:1440,height:1000},...(re
 const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
 const linger=async ms=>{if(record)await page.waitForTimeout(ms)},showPitch=()=>page.evaluate(()=>document.querySelector('.new-scorebar').scrollIntoView({behavior:'instant',block:'start'}));
 try{
-  await page.goto(target+'?seed=82');const canvas=page.locator('.new-pitch3d canvas');await canvas.waitFor();
+  await page.goto(target+'?seed=82&tour=off');const canvas=page.locator('.new-pitch3d canvas');await canvas.waitFor();
   const timeline=page.getByRole('slider',{name:'Match timeline'});
   await page.getByRole('button',{name:'Play',exact:true}).click();await linger(4000);
   await page.getByRole('button',{name:'Zoom in',exact:true}).click();await linger(2000);
@@ -58,7 +58,7 @@ try{
   await page.getByTestId('formation-team-0').scrollIntoViewIfNeeded();
   await page.screenshot({path:directory+'formations-production.png',fullPage:true});
   assert.deepEqual(errors,[]);const video=page.video();await context.close();if(record&&video)renameSync(await video.path(),directory+'demo-silent.webm');
-  const mobile=await browser.newPage({viewport:{width:390,height:844}});await mobile.goto(target+'?seed=82');await mobile.locator('.new-pitch3d canvas').waitFor();
+  const mobile=await browser.newPage({viewport:{width:390,height:844}});await mobile.goto(target+'?seed=82&tour=off');await mobile.locator('.new-pitch3d canvas').waitFor();
   await mobile.getByRole('slider',{name:'Match timeline'}).fill('4680.25');await mobile.getByTestId('foundry-moment').waitFor();
   assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await mobile.screenshot({path:directory+'mobile-production.png',fullPage:true});
   await mobile.locator('.formation-diagrams > summary').click();await mobile.getByTestId('formation-team-0').waitFor();

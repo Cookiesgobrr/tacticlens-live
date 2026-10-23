@@ -16,7 +16,8 @@
     "test:camera": "node --experimental-strip-types scripts/check-camera.mjs",
     "test:highlights": "node --experimental-strip-types scripts/check-highlights.mjs",
     "test:formations": "node --experimental-strip-types scripts/check-formations.mjs",
-    "test:editorial": "node --experimental-strip-types scripts/check-editorial.mjs"
+    "test:editorial": "node --experimental-strip-types scripts/check-editorial.mjs",
+    "test:tour": "node scripts/check-tour.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
