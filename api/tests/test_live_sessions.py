@@ -128,6 +128,11 @@ class SessionTests(unittest.TestCase):
         self.store.data[f'{PREFIX}/sources/approved-82.json']['events'][0]['text']='tampered'
         with self.assertRaises(ValueError):self.start()
         self.assertEqual(FakeBackend.calls,[])
+
+    def test_trial_credit_reserve_cannot_be_spent(self):
+        self.approval['remainingCreditMicroUsd']=190500000
+        with self.assertRaises(ValueError):self.start()
+        self.assertEqual(FakeBackend.calls,[])
     def test_no_browser_timestamp_or_restart(self):
         self.assertEqual(self.start()['status'],'started')
         self.assertEqual(self.start()['status'],'existing')

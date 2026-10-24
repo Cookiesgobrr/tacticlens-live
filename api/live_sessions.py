@@ -20,6 +20,7 @@ PREFIX = "live-v2"
 LEDGER = f"{PREFIX}/ledger.json"
 STAGES = ("Insight", "Verification", "Presentation")
 ACTIVE = ("processing", "verification", "presentation")
+CREDIT_RESERVE_MICRO_USD = 190_000_000
 
 
 def enabled():
@@ -76,8 +77,8 @@ def approval_for(store, approval_id, now):
         if type(approval.get(k)) is not int or not 1 <= approval[k] <= 100000000:
             raise ValueError("Operator-verified price ceiling required")
     if (type(approval.get("remainingCreditMicroUsd")) is not int
-            or approval["remainingCreditMicroUsd"] < limits["microUsd"]):
-        raise ValueError("Trial allocation exceeds attested credit")
+            or approval["remainingCreditMicroUsd"]-limits["microUsd"] < CREDIT_RESERVE_MICRO_USD):
+        raise ValueError("Trial allocation would breach the protected credit reserve")
     source = store.get(f"{PREFIX}/sources/{ident(approval['sourceId'])}.json")
     validate_source(source)
     if (approval.get("sourceSha256") != digest(source) or approval.get("engineSha256") != source["engineSha256"]
