@@ -214,7 +214,8 @@ class SessionTests(unittest.TestCase):
     def test_unavailable_preflight_never_initializes_model(self):
         self.start()
         def fail():raise RuntimeError('Azure unavailable')
-        with self.assertRaises(RuntimeError):asyncio.run(pulse(self.store,SID,backend_factory=FakeBackend,preflight=fail,now=NOW+1))
+        self.assertEqual(asyncio.run(pulse(self.store,SID,backend_factory=FakeBackend,preflight=fail,now=NOW+1))['status'],'preflight_unavailable')
+        self.assertFalse(self.feed()['serviceAvailable'])
         self.assertEqual(self.feed()['reservedCalls'],0)
     def test_public_read_allowlist_and_no_credit_leak(self):
         self.start();self.tick(60)

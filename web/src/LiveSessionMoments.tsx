@@ -47,7 +47,7 @@ export default function LiveSessionMoments({match,time,onReplay,onJoin}:{match:T
  const [audience,setAudience]=useState<Audience>('fan'),[player,setPlayer]=useState(9);
  const records=(feed?.records??[]).filter(r=>r.candidate.atSecond<=time).sort((a,b)=>b.candidate.atSecond-a.candidate.atSecond);
  const latest=records[0];
- const status=state==='unavailable'?'Fallback / unavailable':!latest?'Waiting for match events':recordStatus(latest,!!feed?.generationEnabled);
+ const status=state==='unavailable'||feed?.serviceAvailable===false?'Fallback / unavailable':!latest?'Waiting for match events':recordStatus(latest,!!feed?.generationEnabled&&state==='ready');
  return <details className="live-session-preview" open={!!sid} data-testid="live-session">
   <summary>AI Moments <span>Event-driven preview</span></summary>
   <div className="live-session-state" role="status" data-testid="session-status">{status}</div>
@@ -68,7 +68,7 @@ export default function LiveSessionMoments({match,time,onReplay,onJoin}:{match:T
     return <li key={r.candidate.id} data-event-id={r.candidate.id} data-state={r.state}>
      <details open={index===0}>
       <summary><time>{liveClock(r.candidate.atSecond)}</time><strong>{liveHeadline(r.facts)}</strong></summary>
-      <span className="live-session-provenance">{verified?'Cached verified insight':recordStatus(r,!!feed?.generationEnabled)}{r.providerMode==='offline-mock'?' · Offline test':''}</span>
+      <span className="live-session-provenance">{verified?'Cached verified insight':recordStatus(r,!!feed?.generationEnabled&&state==='ready'&&feed?.serviceAvailable!==false)}{r.providerMode==='offline-mock'?' · Offline test':''}</span>
       {wrongPlayer?<p>No verified analysis for the selected player at this moment.</p>:lines.map((line,i)=><p className={i===0?'editorial-lead':''} key={line.id}>{line.text}</p>)}
       {event&&<button onClick={()=>onReplay(event)}>Replay AI moment</button>}
       <details><summary>Sources & verification</summary>

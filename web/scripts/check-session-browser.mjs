@@ -9,14 +9,14 @@ const api=spawn(process.env.PYTHON??'python',['-m','api.tests.session_browser_se
 const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','5188','--strictPort'],{
  cwd:new URL('../',import.meta.url),env:{...process.env,VITE_LIVE_SESSION_READ_ORIGIN:'https://session.offline.test'},stdio:'inherit'});
 async function ready(url){for(let i=0;i<100;i++){try{if((await fetch(url)).ok)return;}catch{}await new Promise(r=>setTimeout(r,100));}throw Error('Test service unavailable');}
-let browser;
+let browser,page,readStates=[];
 try{
  await Promise.all([ready(target),ready('http://127.0.0.1:5190/')]);
  browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']}: {})});
- const page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[],requests=[];
+ page=await browser.newPage({viewport:{width:1440,height:1050}});const errors=[],requests=[];
  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push({url:r.url(),method:r.method()}));
  await page.route('https://session.offline.test/**',async route=>{
-  const r=await fetch('http://127.0.0.1:5190/');await route.fulfill({json:await r.json()});
+  const r=await fetch('http://127.0.0.1:5190/');const data=await r.json();readStates.push(data.records.map(r=>[r.candidate.id,r.state]));await route.fulfill({json:data});
  });
  await page.goto(target+'?seed=82&tour=off&session=offline-session-82');
  await page.getByRole('button',{name:'2D pitch',exact:true}).click();
@@ -53,7 +53,9 @@ try{
  assert.deepEqual(errors,[]);
  console.log('OFFLINE browser flow passed: two dynamic events, three mock agents each, real coordinator/verification/public reads, asynchronous states, editions, replay, refresh and 320–1440px. Azure calls: 0.');
 }catch(error){
- console.error('OFFLINE diagnostics',await (await fetch('http://127.0.0.1:5190/')).json());
+ console.error('OFFLINE diagnostics',JSON.stringify(await (await fetch('http://127.0.0.1:5190/')).json()));
+ console.error('UI_STATUS',await page?.getByTestId('session-status').innerText(),'READ_STATES',JSON.stringify(readStates));
+ if(page)console.log('SESSION_FAILURE_PREVIEW='+(await page.locator('.live-session-preview').screenshot({type:'jpeg',quality:45})).toString('base64'));
  if(browser?.contexts()[0]?.pages()[0]){mkdirSync(new URL('../test-results/session/',import.meta.url),{recursive:true});await browser.contexts()[0].pages()[0].screenshot({path:new URL('../test-results/session/failure.png',import.meta.url).pathname,fullPage:true});}
  throw error;
 }finally{await browser?.close();server.kill();api.kill();}

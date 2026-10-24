@@ -158,11 +158,14 @@ def facts_for(source, candidate):
     if shot:
         claims["chance"] = [shot["id"]]
     # Text from event logs is deliberately excluded from the model payload.
-    return dict(matchId=source["matchId"], seed=source["seed"], engineVersion=source["engineVersion"],
+    # Canonical publication precision avoids insignificant Math/libm differences
+    # across Node/Chrome/CPU runtimes. Validate original geometry BEFORE rounding.
+    quantized = lambda row, keys: {k: round(row[k], 6) if type(row[k]) is float else row[k] for k in keys}
+    return dict(matchId=source["matchId"], seed=source["seed"], engineVersion=source["engineVersion"], measurementPrecision=6,
                 candidate=candidate, stats=stats, claims=claims,
                 actor=source["players"][player] if player is not None else None,
-                shot={k: shot[k] for k in ("id", "time", "player", "team", "x", "y", "shotXg", "shotDistance", "shotAngle", "shotPressure")} if shot else None,
-                event={k: event[k] for k in ("id", "time", "player", "team", "type", "x", "y")} if event else None)
+                shot=quantized(shot, ("id", "time", "player", "team", "x", "y", "shotXg", "shotDistance", "shotAngle", "shotPressure")) if shot else None,
+                event=quantized(event, ("id", "time", "player", "team", "type", "x", "y")) if event else None)
 
 
 def check_proposal(facts, proposal):

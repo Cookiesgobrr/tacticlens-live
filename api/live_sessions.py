@@ -125,6 +125,12 @@ def _get_session(store, sid):
     return (ledger or {}).get("sessions", {}).get(sid)
 
 
+def _unavailable(store, sid):
+    def mark(state):
+        state["sessions"][sid]["serviceAvailable"] = False
+    transaction(store, mark)
+
+
 def stop_session(store, sid):
     ident(sid)
     def stop(state):
@@ -144,6 +150,7 @@ def _reserve(store, sid, approval, source, now):
 
     def reserve(state):
         s = state["sessions"][sid]
+        s["serviceAvailable"] = True
         if s["status"] != "running":
             return None
         if now >= s["expiresAt"]:
@@ -238,13 +245,21 @@ async def pulse(store, sid, *, backend_factory, preflight, now=None):
         return {"status": "unknown_session"}
     if session["status"] != "running":
         return {"status": session["status"]}
-    approval, source = approval_for(store, session["approvalId"], now)
+    try:
+        approval, source = approval_for(store, session["approvalId"], now)
+    except (ValueError, KeyError, TypeError, AttributeError):
+        _unavailable(store, sid)
+        return {"status": "approval_unavailable"}
     if (session["sourceSha256"] != digest(source) or session["engineSha256"] != source["engineSha256"]
             or session["speed"] != approval["limits"]["speed"]):
         raise ValueError("Session approval changed")
     # Free Trial/spending-limit/model checks are fresh for every workflow. This
     # read is not inference and happens before any reservation/backend creation.
-    preflight()
+    try:
+        preflight()
+    except Exception:
+        _unavailable(store, sid)
+        return {"status": "preflight_unavailable"}
     reserved = _reserve(store, sid, approval, source, now)
     if not reserved:
         return {"status": "idle"}
@@ -336,9 +351,11 @@ def public_session(store, sid, *, now=None):
         for c in session["queue"]:
             records.append(dict(candidate=c, state="identified", facts=facts_for(source, c),
                                 startedAt=now, finishedAt=None))
+    status = "expired" if session["status"] == "running" and now >= session["expiresAt"] else session["status"]
     return dict(schemaVersion="tacticlens.session-feed.v1", sessionId=sid,
                 matchId=session["matchId"], seed=session["seed"], engineVersion=session["engineVersion"],
                 engineSha256=session["engineSha256"], sourceSha256=session["sourceSha256"],
-                status=session["status"], generationEnabled=enabled(), clock=clock, speed=session["speed"],
+                status=status, generationEnabled=enabled() and status == "running",
+                serviceAvailable=session.get("serviceAvailable", True), clock=clock, speed=session["speed"],
                 queued=len(session["queue"]), records=records,
                 reservedCalls=session["reservedCalls"], reservedMoments=session["reservedMoments"])

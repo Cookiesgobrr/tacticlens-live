@@ -1,6 +1,7 @@
 import type {Timeline,EventLog} from './footballEngine';
 import {AUDIENCES,type Audience} from './momentIntelligence.ts';
 export type Candidate={id:string;atSecond:number;kind:string;priority:number;eventId:string|null;player:number|null;team:number|null};
+const q=(n:number)=>Math.round(n*1e6)/1e6;
 const wins=['tackle','interception','recovery'];
 const rows=(match:Timeline,at:number)=>match.events.filter(e=>e.time<=at);
 const pair=(events:EventLog[],kind:string)=>[0,1].map(t=>events.filter(e=>e.type===kind&&e.team===t).length);
@@ -48,21 +49,21 @@ export function liveFacts(match:Timeline,candidate:Candidate){
     team0:ids(events.filter(e=>e.team===0&&['shot','goal'].includes(e.type))),team1:ids(events.filter(e=>e.team===1&&['shot','goal'].includes(e.type)))};
   if(player!==null){claims.player=ids(events.filter(e=>e.player===player&&['shot','goal',...wins].includes(e.type)));claims.sequence=ids(chain);}
   if(shot)claims.chance=[shot.id];
-  return {matchId:match.matchId,seed:match.seed,engineVersion:match.engineVersion,candidate,
+  return {matchId:match.matchId,seed:match.seed,engineVersion:match.engineVersion,measurementPrecision:6,candidate,
     stats:{score:pair(events,'goal'),shots:pair(events,'shot'),xg:[0,1].map(t=>Math.round(shots.filter(e=>e.team===t).reduce((s,e)=>s+(e.shotXg??0),0)*1000)/1000),passes:pair(events,'receive'),
       recentShots:pair(recent,'shot'),previousShots:pair(previous,'shot'),completedSequence:chain.filter(e=>e.type==='receive').length,
       playerGoals:events.filter(e=>e.type==='goal'&&e.player===player).length,playerShots:events.filter(e=>e.type==='shot'&&e.player===player).length,
       playerWins:events.filter(e=>wins.includes(e.type)&&e.player===player).length},
     claims,actor:player===null?null:match.players[player],
-    shot:shot?{id:shot.id,time:shot.time,player:shot.player,team:shot.team,x:shot.x,y:shot.y,shotXg:shot.shotXg,shotDistance:shot.shotDistance,shotAngle:shot.shotAngle,shotPressure:shot.shotPressure}:null,
-    event:event?{id:event.id,time:event.time,player:event.player,team:event.team,type:event.type,x:event.x,y:event.y}:null};
+    shot:shot?{id:shot.id,time:shot.time,player:shot.player,team:shot.team,x:q(shot.x),y:q(shot.y),shotXg:q(shot.shotXg!),shotDistance:q(shot.shotDistance!),shotAngle:q(shot.shotAngle!),shotPressure:q(shot.shotPressure!)}:null,
+    event:event?{id:event.id,time:event.time,player:event.player,team:event.team,type:event.type,x:q(event.x),y:q(event.y)}:null};
 }
 export type LiveFacts=ReturnType<typeof liveFacts>;
 export type Plan={id:string;modes:Record<Audience,string[]>};
 export type SessionRecord={candidate:Candidate;state:string;facts:LiveFacts;startedAt:number;finishedAt:number|null;
   plan?:Plan;proposal?:{id:string;angle:string;claimIds:string[]};trace?:{stage:string;responseId:string;inputTokens:number;outputTokens:number;elapsedMs:number}[];elapsedMs?:number;providerMode?:string;eventToPublicationMs?:number};
 export type SessionFeed={schemaVersion:string;sessionId:string;matchId:string;seed:number;engineVersion:string;engineSha256:string;sourceSha256:string;
-  status:string;generationEnabled:boolean;clock:number;speed:number;queued:number;records:SessionRecord[];reservedCalls:number;reservedMoments:number};
+  status:string;generationEnabled:boolean;serviceAvailable?:boolean;clock:number;speed:number;queued:number;records:SessionRecord[];reservedCalls:number;reservedMoments:number};
 export const stable=(v:unknown):string=>Array.isArray(v)?`[${v.map(stable).join(',')}]`:v&&typeof v==='object'?`{${Object.entries(v).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,x])=>`${JSON.stringify(k)}:${stable(x)}`).join(',')}}`:JSON.stringify(v)??'null';
 export function validateSessionFeed(value:unknown,match:Timeline,sid:string):SessionFeed|null{
  try{
