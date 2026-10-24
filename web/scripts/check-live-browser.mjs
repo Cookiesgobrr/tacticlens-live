@@ -46,7 +46,8 @@ try{
  await page.getByRole('spinbutton',{name:'Reproducible match seed'}).fill('2027');await page.getByRole('button',{name:'Load',exact:true}).click();await timeline.fill('5400');
  assert.equal(await page.getByTestId('foundry-moment').count(),0);
  assert.equal(requests.filter(r=>r.url.includes('live-sim82-4680.25.json')).length,1,'One cache GET across toggles, rewinds, audiences and seeds');
- assert.ok(requests.every(r=>r.method==='GET'&&!r.headers['x-functions-key']&&!/azurewebsites\.net|services\.ai\.azure\.com|api\.openai\.com/.test(r.url)),'The frontend must have no model/Function access');
+ const allowedRead=url=>{const u=new URL(url);return u.origin==='https://tacticlens-api-2927.azurewebsites.net'&&u.pathname==='/api/session-feed/live-20261024-82'&&!u.search;};
+ assert.ok(requests.every(r=>r.method==='GET'&&!r.headers['x-functions-key']&&!/services\.ai\.azure\.com|api\.openai\.com/.test(r.url)&&(!/azurewebsites\.net/.test(r.url)||allowedRead(r.url))),'Only the finite read-only session feed may contact Azure; never model access or keys');
  // Failure views read genuine showcase evidence; no fabricated live result.
  for(const kind of ['missing','tampered','network']){
   const failure=await browser.newPage({viewport:{width:390,height:844}});
@@ -64,5 +65,5 @@ try{
   await failure.close();
  }
  assert.deepEqual(errors,[]);
- console.log('Live-cache browser review passed: genuine record, one GET, no POST/keys/Azure exposure, JSON parity, seek/player/seed isolation, 320/390/1440px, and missing/tampered/network fallback.');
+ console.log('Live-cache browser review passed: genuine record, one GET, no POST/keys/model exposure; finite session GET only, JSON parity, seek/player/seed isolation, 320/390/1440px, and missing/tampered/network fallback.');
 }finally{await browser?.close();server?.kill();}

@@ -32,6 +32,8 @@ jobs:
       - name: Build static preview
         env:
           VITE_STATIC_DEMO: "true"
+          VITE_LIVE_SESSION_READ_ORIGIN: https://tacticlens-api-2927.azurewebsites.net
+          VITE_LIVE_SESSION_ID: live-20261024-82
         run: npm run build -- --mode pages
         working-directory: web
       - uses: actions/configure-pages@v5
