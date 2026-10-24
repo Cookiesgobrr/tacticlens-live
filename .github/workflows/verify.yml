@@ -48,6 +48,11 @@ jobs:
         working-directory: .
         run: python3 -m unittest api.tests.test_live_sessions -q
       - run: npm run test:sessions
+      - name: Independently validate completed Azure session snapshot (read-only GET)
+        run: node --experimental-strip-types scripts/publish-session-snapshot.mjs
+        env:
+          VITE_LIVE_SESSION_READ_ORIGIN: https://tacticlens-api-2927.azurewebsites.net
+          VITE_LIVE_SESSION_ID: live-20261024-82
       - run: npm run build
       - name: Prepare browser
         timeout-minutes: 10
