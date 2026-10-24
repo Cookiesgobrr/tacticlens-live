@@ -331,3 +331,19 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 .live-session-history code,.live-session-history small {display:block;overflow-wrap:anywhere;font-size:10px}
 .live-session-history .live-source {display:block;margin:5px 0;text-align:left;max-width:100%}
 .live-session-provenance {display:block;margin-top:10px}
+
+/* Creator credit — below the match experience, not over the broadcast. */
+.tacticlens-credit{
+  padding:20px 16px 24px;
+  border-top:1px solid #44334e;
+  background:#20002b;
+  color:#c5b8cc;
+  text-align:center;
+  font-size:12px;
+  line-height:1.65;
+  letter-spacing:.01em;
+}
+.tacticlens-credit strong{color:#fff;font-weight:700}
+.tacticlens-credit span{color:#d6cadd}
+.tacticlens-credit em{font-style:normal;color:#b5a7be}
+@media(max-width:600px){.tacticlens-credit{padding:18px 24px;font-size:11px}}
