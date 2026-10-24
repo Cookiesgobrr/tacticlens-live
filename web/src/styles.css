@@ -332,18 +332,9 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 .live-session-history .live-source {display:block;margin:5px 0;text-align:left;max-width:100%}
 .live-session-provenance {display:block;margin-top:10px}
 
-/* Creator credit — below the match experience, not over the broadcast. */
-.tacticlens-credit{
-  padding:20px 16px 24px;
-  border-top:1px solid #44334e;
-  background:#20002b;
-  color:#c5b8cc;
-  text-align:center;
-  font-size:12px;
-  line-height:1.65;
-  letter-spacing:.01em;
-}
-.tacticlens-credit strong{color:#fff;font-weight:700}
-.tacticlens-credit span{color:#d6cadd}
-.tacticlens-credit em{font-style:normal;color:#b5a7be}
-@media(max-width:600px){.tacticlens-credit{padding:18px 24px;font-size:11px}}
+/* Small project attribution, distinct from the match data and AI provenance. */
+.new-match .new-creator-credit{box-sizing:border-box;display:block;width:min(1450px,100%);margin:22px auto 0;padding:22px 22px 28px;border-top:1px solid #67506d;text-align:center;font-size:12px;font-weight:400;line-height:1.8;letter-spacing:.01em;color:#b8a9c3}
+.new-creator-credit strong{color:#fff;font-weight:700}
+.new-creator-credit>span:not(.new-creator-hosts){color:#e1d4e6}
+.new-creator-credit .new-creator-hosts{color:#af9ab9}
+@media(max-width:600px){.new-match .new-creator-credit{padding:18px 18px 24px;font-size:11px}.new-creator-credit .new-creator-hosts{display:block}}
