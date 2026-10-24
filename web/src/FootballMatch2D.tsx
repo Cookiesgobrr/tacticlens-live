@@ -269,5 +269,9 @@ export default function FootballMatch2D(){
         </section>
       </aside>
     </div>
+    <footer className="new-creator-credit" aria-label="Project credit">
+      Made by <strong>Tarun Abraham</strong> for <span>Inside the Game: Developer Hackathon</span>
+      <span className="new-creator-hosts"> · Presented by Microsoft × Premier League</span>
+    </footer>
   </div>;
 }
