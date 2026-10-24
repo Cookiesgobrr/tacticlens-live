@@ -62,7 +62,7 @@ class FakeBackend:
         return dict(approved=self.corrupt!='review', checkedId=facts['candidate']['id'], issues=[])
     async def present(self, facts, proposal):
         await self.call('Presentation', facts)
-        result=dict(id=facts['candidate']['id'],modes=dict(fan=['event','score'],analyst=['totals','activity'],
+        result=dict(id=facts['candidate']['id'],modes=dict(fan=['event','player','chance','activity'] if facts['candidate']['kind']=='goal' else ['event','score'],analyst=['totals','activity'],
             club_home=['event','team0'],club_away=['event','team1'],player=['player'] if facts['actor'] else ['score'],broadcast=['event']))
         if self.corrupt == 'text':
             result['unrestrictedText']='Invented player scores 99 goals'
@@ -231,6 +231,31 @@ class SessionTests(unittest.TestCase):
             self.assertTrue(all(c['kind']!='goal' or any(e['id']==c['id'] and e['type']=='goal' for e in source['events']) for c in candidates))
             samples.append(dict(seed=seed,candidates=candidates,facts=[facts_for(source,c) for c in candidates]))
         path=ROOT/'artifacts/session-parity.json';path.parent.mkdir(exist_ok=True);path.write_text(json.dumps(samples))
+    def test_second_seed_session_uses_only_its_own_evidence(self):
+        self.setUp_store_only()
+        self.approval=setup(self.store,self.other)
+        self.start()
+        for at in range(0,5401,120):self.tick(at)
+        feed=self.feed()
+        self.assertEqual(feed['matchId'],self.other['matchId'])
+        self.assertGreaterEqual(len(feed['records']),2)
+        for r in feed['records']:
+            self.assertEqual(r['facts']['seed'],2027)
+            self.assertTrue(all(i.startswith('SIM-2027-F2-') for ids in r['facts']['claims'].values() for i in ids))
+        self.assertEqual(len(FakeBackend.calls),3*len(feed['records']))
+    def test_global_day_quota_shared_across_approvals(self):
+        caps=json.loads(os.environ['TACTICLENS_SESSION_GLOBAL_LIMITS']);caps['calls']=3
+        os.environ['TACTICLENS_SESSION_GLOBAL_LIMITS']=json.dumps(caps)
+        other='another-approved-session'
+        setup(self.store,self.other,other)
+        os.environ['TACTICLENS_SESSION_APPROVAL_IDS']=SID+','+other
+        self.start();self.tick(60)
+        with self.assertRaises(ValueError):start_session(self.store,other,now=NOW)
+        stop_session(self.store,SID)
+        self.assertEqual(start_session(self.store,other,now=NOW)['status'],'started')
+        asyncio.run(pulse(self.store,other,backend_factory=FakeBackend,preflight=lambda:None,now=NOW+2))
+        self.assertEqual(len(FakeBackend.calls),3)
+        self.assertEqual(self.store.data[LEDGER]['sessions'][other]['status'],'budget_exhausted')
     def test_cas_contention_never_loses_updates(self):
         self.store.data[LEDGER]=dict(sessions={},days={},reservations={},count=0)
         def increment():

@@ -190,4 +190,12 @@ def check_plan(facts, proposal, plan):
             raise ValueError("Wrong audience attribution")
     if plan["modes"]["fan"] == plan["modes"]["analyst"]:
         raise ValueError("Undifferentiated editions")
+    if not {"chance", "sequence", "activity", "totals"} & set(plan["modes"]["analyst"]):
+        raise ValueError("Analyst lacks measured context")
+    if facts["candidate"]["kind"] == "goal" and (len(plan["modes"]["fan"]) < 3
+            or "player" not in plan["modes"]["fan"]
+            or not {"chance", "sequence", "activity", "totals"} & set(plan["modes"]["fan"])):
+        raise ValueError("Goal coverage lacks player/context depth")
+    if len(plan["modes"]["broadcast"]) > 2:
+        raise ValueError("Broadcast edition is not concise")
     return plan

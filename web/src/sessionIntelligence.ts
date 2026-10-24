@@ -34,7 +34,7 @@ export function liveCandidates(match:Timeline){
       result.push({id:e.id,atSecond:e.time,kind,priority,eventId:e.id,player:e.player,team:e.team});}
   }
   for(const [atSecond,kind] of [[2700,'halftime'],[5400,'fulltime']] as const)result.push({id:`${match.matchId}:${kind}`,atSecond,kind,priority:95,eventId:null,player:null,team:null});
-  result.sort((a,b)=>a.atSecond-b.atSecond||a.id.localeCompare(b.id));candidatesCache.set(match,result);return result;
+  result.sort((a,b)=>a.atSecond-b.atSecond||(a.id<b.id?-1:a.id>b.id?1:0));candidatesCache.set(match,result);return result;
 }
 export function liveFacts(match:Timeline,candidate:Candidate){
   const at=candidate.atSecond,events=rows(match,at),event=events.find(e=>e.id===candidate.eventId)??null;
@@ -80,6 +80,7 @@ export function validateSessionFeed(value:unknown,match:Timeline,sid:string):Ses
       if(!Array.isArray(chosen)||chosen.length<4||chosen.length>9||new Set(chosen).size!==chosen.length||chosen.some(id=>!(id in r.facts.claims))||!['event','score','team0','team1',r.proposal.angle].every(id=>chosen.includes(id))||r.facts.actor&&!chosen.includes('player'))return null;
       for(const a of AUDIENCES){const ids=r.plan.modes[a];const required=a==='fan'||a==='broadcast'?'event':a==='club_home'?'team0':a==='club_away'?'team1':a==='player'?(r.facts.actor?'player':'score'):null;
         if(!Array.isArray(ids)||ids.length<1||ids.length>5||new Set(ids).size!==ids.length||ids.some(id=>!chosen.includes(id))||required&&!ids.includes(required))return null;}
+      if(!r.plan.modes.analyst.some(id=>['chance','sequence','activity','totals'].includes(id))||r.plan.modes.broadcast.length>2||c.kind==='goal'&&(r.plan.modes.fan.length<3||!r.plan.modes.fan.includes('player')||!r.plan.modes.fan.some(id=>['chance','sequence','activity','totals'].includes(id))))return null;
       if(stable(r.plan.modes.fan)===stable(r.plan.modes.analyst)||!Array.isArray(r.trace)||r.trace.length!==3||new Set(r.trace.map(t=>t.responseId)).size!==3)return null;
       if(r.trace.some((t,i)=>t.stage!==['Insight','Verification','Presentation'][i]||typeof t.responseId!=='string'||t.responseId.length<6||!Number.isInteger(t.inputTokens)||t.inputTokens<0||t.inputTokens>16000||!Number.isInteger(t.outputTokens)||t.outputTokens<0||t.outputTokens>1000||!Number.isFinite(t.elapsedMs)||t.elapsedMs<0))return null;
     }
@@ -94,15 +95,17 @@ export function liveHeadline(f:LiveFacts){
 }
 export function edition(f:LiveFacts,audience:Audience,plan?:Plan){
  const s=f.stats,c=f.candidate,actor=f.actor?.name??'The selected player',score=`${club(0)} ${s.score[0]}–${s.score[1]} ${club(1)}`;
- const event=c.kind==='goal'?(audience==='fan'?`Goal! ${actor} delivers for ${club(c.team!)}. ${score}.`:audience==='club_home'||audience==='club_away'?(c.team===(audience==='club_home'?0:1)?`${actor} finds the net. A moment to savour for ${club(c.team!)}.`:`${actor} scores at the other end. ${club(audience==='club_home'?0:1)} must respond.`):`${actor} scores for ${club(c.team!)}. ${score}.`):`${liveHeadline(f)}. ${score}.`;
+ const own=s.score[c.team??0],other=s.score[1-(c.team??0)],teamName=club(c.team??0);
+ const goalLead=own+other===1?`${actor} breaks the deadlock for ${teamName}!`:own===other?`All square! ${actor} draws ${teamName} level.`:own<other?`${actor} pulls one back for ${teamName}. The gap closes, though they still trail.`:own-other===1?`${teamName} are in front! ${actor} makes it ${s.score[0]}–${s.score[1]}.`:`${actor} extends ${teamName}'s advantage. They now lead by ${own-other}.`;
+ const event=c.kind==='goal'?(audience==='fan'?`${goalLead} ${score}.`:audience==='club_home'||audience==='club_away'?(c.team===(audience==='club_home'?0:1)?`${actor} finds the net. A moment to savour for ${teamName}. ${score}.`:`${actor} scores at the other end. ${club(audience==='club_home'?0:1)} must respond. ${score}.`):`${actor} scores for ${teamName}. ${score}.`):`${liveHeadline(f)}. ${score}.`;
  const sentences:Record<string,string>={event,score:`At ${liveClock(c.atSecond)}, it is ${score}.`,
   totals:`The match has produced ${s.shots[0]+s.shots[1]} shots and ${(s.xg[0]+s.xg[1]).toFixed(2)} combined synthetic xG so far.`,
   activity:`Over the last five minutes, Northport have ${s.recentShots[0]} shots and Southbridge ${s.recentShots[1]}; the preceding five-minute counts were ${s.previousShots[0]} and ${s.previousShots[1]}. This measures attempts, not territorial control.`,
   sequence:`${club(c.team??0)} completed ${s.completedSequence} passes in the uninterrupted logged possession sequence within 25 seconds of this action.`,
-  player:`${actor}: ${s.playerGoals} goals, ${s.playerShots} shots and ${s.playerWins} recorded tackles, interceptions or recoveries so far.`,
+  player:audience==='fan'&&c.kind==='goal'?`That is ${actor}'s ${s.playerGoals===1?'first':s.playerGoals===2?'second':s.playerGoals===3?'third':String(s.playerGoals)+'th'} goal of this match, from ${s.playerShots} attempts. `:`${actor}: ${s.playerGoals} goals, ${s.playerShots} shots and ${s.playerWins} recorded tackles, interceptions or recoveries so far.`,
   team0:`Northport's return: ${s.score[0]} goals from ${s.shots[0]} shots, with ${s.xg[0].toFixed(2)} synthetic xG.`,
   team1:`Southbridge's return: ${s.score[1]} goals from ${s.shots[1]} shots, with ${s.xg[1].toFixed(2)} synthetic xG.`,
   chance:f.shot?`The source shot carried ${((f.shot.shotXg??0)*100).toFixed(1)}% synthetic xG, struck from ${f.shot.shotDistance?.toFixed(1)} metres at ${f.shot.shotAngle?.toFixed(1)}° off centre. The nearest defender was ${f.shot.shotPressure?.toFixed(1)} metres away.`:''};
  const ids=plan?.modes[audience]??['event','score'];
- return ids.map(id=>({id,text:sentences[id],evidenceIds:f.claims[id]??[]}));
+ return ids.map(id=>({id,text:sentences[id],evidenceIds:[...new Set([...(f.claims[id]??[]),...(id==='event'?f.claims.score:[])])]}));
 }

@@ -187,7 +187,8 @@ def _reserve(store, sid, approval, source, now):
             return None
         # Leave room for actual half/full analyses instead of filling the entire
         # budget with early ordinary sequences. Never invent events to fill it.
-        if not lifecycle and s["reservedMoments"] >= max(0, limits["moments"]-2):
+        lifecycle_reserve = min(2, limits["moments"]//3)
+        if not lifecycle and s["reservedMoments"] >= limits["moments"]-lifecycle_reserve:
             s["queue"].pop(0)
             return None
         key = f"{sid}/{c['id']}"
@@ -235,6 +236,8 @@ async def pulse(store, sid, *, backend_factory, preflight, now=None):
     session = _get_session(store, sid)
     if not session:
         return {"status": "unknown_session"}
+    if session["status"] != "running":
+        return {"status": session["status"]}
     approval, source = approval_for(store, session["approvalId"], now)
     if (session["sourceSha256"] != digest(source) or session["engineSha256"] != source["engineSha256"]
             or session["speed"] != approval["limits"]["speed"]):
@@ -281,6 +284,8 @@ async def pulse(store, sid, *, backend_factory, preflight, now=None):
                      providerMode=getattr(backend, "provider", "offline-mock"),
                      finishedAt=stage_clock(), elapsedMs=round((time.monotonic()-started)*1000),
                      eventToPublicationMs=round((stage_clock()-r["occurredAt"])*1000))
+            if r["candidate"]["kind"] == "fulltime":
+                s["status"], s["queue"] = "completed", []
         transaction(store, publish)
         return {"status": "published", "eventId": record["candidate"]["id"]}
     except Exception as exc:
@@ -315,6 +320,10 @@ def public_session(store, sid, *, now=None):
         # Public envelope intentionally excludes approvals, credit, private
         # exception details, prompts and subscription identifiers.
         item = {k: copy.deepcopy(r[k]) for k in ("candidate", "state", "facts", "startedAt", "finishedAt")}
+        if r["state"] in ACTIVE and now-r["startedAt"] > 200:
+            # Uncertain provider outcome is a fallback, not endless fake
+            # processing. The durable slot/reservation remains held privately.
+            item["state"] = "fallback"
         if r["state"] == "verified":
             check_plan(r["facts"], r["proposal"], r["plan"])
             item.update(plan=r["plan"], proposal=r["proposal"], trace=r["trace"], elapsedMs=r["elapsedMs"],

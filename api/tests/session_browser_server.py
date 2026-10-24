@@ -18,7 +18,7 @@ clock=0
 class SlowFake(FakeBackend):
     async def call(self,stage,facts):
         await super().call(stage,facts)
-        await asyncio.sleep(3.2)
+        await asyncio.sleep(4.0)
 class Handler(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
     def send(self,value):

@@ -61,9 +61,6 @@ jobs:
           fi
       - run: npm run test:browser
       - run: npm run test:live-browser
-      - run: npm run test:session-browser
-        env:
-          PYTHON: python3
       - run: npm run test:tour
       - uses: actions/upload-artifact@v4
         if: always()
@@ -71,3 +68,31 @@ jobs:
           name: gameplay-browser-review
           path: web/test-results
 
+
+  sessions-browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - name: Prepare browser
+        run: |
+          browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$browser_path" ]; then
+            echo "CHROMIUM_PATH=$browser_path" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - run: npm run test:session-browser
+        env:
+          PYTHON: python3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: session-browser-review
+          path: web/test-results/session

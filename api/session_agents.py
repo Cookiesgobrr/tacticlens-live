@@ -33,11 +33,12 @@ from ONLY the verified selected claim IDs. Return JSON only:
 {\"id\":\"exact candidate.id\",\"modes\":{\"fan\":[\"IDs\"],\"analyst\":[\"IDs\"],
 \"club_home\":[\"IDs\"],\"club_away\":[\"IDs\"],\"player\":[\"IDs\"],\"broadcast\":[\"IDs\"]}}.
 Each list contains 1 to 5 unique chosen IDs. Fan: event first, score and player
-story, substantial coverage for goals. Analyst: chance geometry, measured sequence,
+story. For goals use at least three IDs including event, player and measured
+chance/sequence/activity/totals context. Analyst: chance geometry, measured sequence,
 activity and totals; fan and analyst lists MUST differ. Home supporters must
 include team0, away supporters team1. Player MUST include player when available,
 otherwise score for a lifecycle summary. Fan and broadcast MUST include event.
-Broadcast: concise event then score. Original audited prose is compiled by code;
+Broadcast: at most two IDs, event then optional score. Original audited prose is compiled by code;
 do not add free text, claims, predictions or fabricated context."""
 
 

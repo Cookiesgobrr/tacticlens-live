@@ -24,11 +24,11 @@ try{
  await status.filter({hasText:'Waiting for match events'}).waitFor();
  let job=fetch('http://127.0.0.1:5190/advance?at=60',{method:'POST'});
  await timeline.fill('60');await status.filter({hasText:'AI processing'}).waitFor();
- await status.filter({hasText:'Evidence verification'}).waitFor();await job;
+ await status.filter({hasText:'Evidence verification'}).waitFor();assert.equal((await (await job).json()).status,'published');
  await status.filter({hasText:'Verified insight available'}).waitFor();
  assert.equal(await page.locator('.live-session-history>li[data-state=verified]').count(),1);
  await timeline.fill('840');job=fetch('http://127.0.0.1:5190/advance?at=840',{method:'POST'});
- await status.filter({hasText:'AI processing'}).waitFor();await job;
+ await status.filter({hasText:/AI processing|Evidence verification/}).waitFor();assert.equal((await (await job).json()).status,'published');
  await status.filter({hasText:'Verified insight available'}).waitFor();
  assert.equal(await page.locator('.live-session-history>li[data-state=verified]').count(),2);
  assert.equal((await (await fetch('http://127.0.0.1:5190/stats')).json()).calls,6);
@@ -43,11 +43,17 @@ try{
  await timeline.fill('840');
  mkdirSync(new URL('../test-results/session/',import.meta.url),{recursive:true});
  await page.screenshot({path:new URL('../test-results/session/desktop.png',import.meta.url).pathname,fullPage:true});
+ console.log('SESSION_DESKTOP_PREVIEW='+(await page.locator('.live-session-preview').screenshot({type:'jpeg',quality:45})).toString('base64'));
  for(const width of [320,390]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:new URL(`../test-results/session/mobile-${width}.png`,import.meta.url).pathname,fullPage:true});}
+ console.log('SESSION_MOBILE_PREVIEW='+(await page.locator('.live-session-preview').screenshot({type:'jpeg',quality:45})).toString('base64'));
  await page.reload();await timeline.fill('840');await status.filter({hasText:'Verified insight available'}).waitFor();
  assert.equal(await page.locator('.live-session-history>li[data-state=verified]').count(),2);
  assert.equal((await (await fetch('http://127.0.0.1:5190/stats')).json()).calls,6,'Audience, replay, refresh never invoke model');
  assert.ok(requests.filter(r=>r.url.includes('session.offline.test')).every(r=>r.method==='GET'));
  assert.deepEqual(errors,[]);
  console.log('OFFLINE browser flow passed: two dynamic events, three mock agents each, real coordinator/verification/public reads, asynchronous states, editions, replay, refresh and 320–1440px. Azure calls: 0.');
+}catch(error){
+ console.error('OFFLINE diagnostics',await (await fetch('http://127.0.0.1:5190/')).json());
+ if(browser?.contexts()[0]?.pages()[0]){mkdirSync(new URL('../test-results/session/',import.meta.url),{recursive:true});await browser.contexts()[0].pages()[0].screenshot({path:new URL('../test-results/session/failure.png',import.meta.url).pathname,fullPage:true});}
+ throw error;
 }finally{await browser?.close();server.kill();api.kill();}
