@@ -19,7 +19,9 @@
     "test:editorial": "node --experimental-strip-types scripts/check-editorial.mjs",
     "test:tour": "node scripts/check-tour.mjs",
     "test:live": "node --experimental-strip-types scripts/check-live-cache.mjs",
-    "test:live-browser": "node scripts/check-live-browser.mjs"
+    "test:live-browser": "node scripts/check-live-browser.mjs",
+    "test:sessions": "node --experimental-strip-types scripts/check-session.mjs",
+    "test:session-browser": "node scripts/check-session-browser.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

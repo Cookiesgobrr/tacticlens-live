@@ -12,6 +12,8 @@ import os
 
 import azure.functions as func
 from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
+from azure.core.exceptions import ResourceModifiedError
+from azure.core import MatchConditions
 from azure.identity import ManagedIdentityCredential
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
@@ -50,6 +52,23 @@ class VerifiedBlobStore:
             json.dumps(value, ensure_ascii=False), overwrite=False,
             content_settings=ContentSettings(content_type="application/json")
         )
+
+    def snapshot(self, name: str):
+        try:
+            blob = self.container.get_blob_client(name).download_blob()
+            return json.loads(blob.readall()), blob.properties.etag
+        except ResourceNotFoundError:
+            return None, None
+
+    def compare_and_swap(self, name: str, etag, value: dict) -> bool:
+        try:
+            options = dict(overwrite=False) if etag is None else dict(
+                overwrite=True, etag=etag, match_condition=MatchConditions.IfNotModified)
+            self.container.get_blob_client(name).upload_blob(json.dumps(value, ensure_ascii=False),
+                content_settings=ContentSettings(content_type="application/json"), **options)
+            return True
+        except (ResourceExistsError, ResourceModifiedError):
+            return False
 
 
 def respond(payload: dict, code: int = 200) -> func.HttpResponse:
@@ -139,3 +158,64 @@ def live_preflight(req: func.HttpRequest) -> func.HttpResponse:
         return respond(dict(status="protected", generationEnabled=generation_enabled, checks=checks))
     except Exception as exc:
         return respond(dict(status="blocked", errorType=type(exc).__name__, generationEnabled=generation_enabled), 409)
+
+
+@app.route(route="session-start/{approval_id}", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
+def session_start(req: func.HttpRequest) -> func.HttpResponse:
+    from api.live_sessions import start_session, enabled
+    if not enabled():
+        return respond({"status": "disabled"}, 403)
+    if req.get_body() not in (b"", b"{}"):
+        return respond({"status": "invalid_input"}, 400)
+    try:
+        return respond(start_session(VerifiedBlobStore(), req.route_params["approval_id"]))
+    except (ValueError, KeyError):
+        return respond({"status": "not_approved"}, 409)
+    except Exception:
+        return respond({"status": "unavailable"}, 503)
+
+
+@app.route(route="session-stop/{session_id}", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
+def session_stop(req: func.HttpRequest) -> func.HttpResponse:
+    from api.live_sessions import stop_session
+    if req.get_body() not in (b"", b"{}"):
+        return respond({"status": "invalid_input"}, 400)
+    try:
+        return respond(stop_session(VerifiedBlobStore(), req.route_params["session_id"]))
+    except (ValueError, KeyError):
+        return respond({"status": "unknown_session"}, 404)
+
+
+@app.route(route="session-feed/{session_id}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def session_feed(req: func.HttpRequest) -> func.HttpResponse:
+    # Empty by default. Explicit exposure is a separate operator decision.
+    sid = req.route_params["session_id"]
+    if sid not in os.environ.get("TACTICLENS_SESSION_PUBLIC_IDS", "").split(",") or not sid:
+        return respond({"status": "unavailable"}, 404)
+    try:
+        from api.live_sessions import public_session
+        value = public_session(VerifiedBlobStore(), sid)
+        return func.HttpResponse(json.dumps(value, ensure_ascii=False), mimetype="application/json",
+            headers={"Cache-Control": "public, max-age=2", "X-Content-Type-Options": "nosniff"})
+    except Exception:
+        return respond({"status": "unavailable"}, 503)
+
+
+@app.timer_trigger(schedule="*/5 * * * * *", arg_name="timer", run_on_startup=False, use_monitor=True)
+async def session_coordinator(timer: func.TimerRequest) -> None:
+    from api.live_sessions import enabled, LEDGER, pulse
+    if not enabled():
+        return
+    from api.live_cost_guard import cloud_trial_preflight
+    from api.session_agents import SessionFoundryBackend
+    store = VerifiedBlobStore()
+    state, _ = store.snapshot(LEDGER)
+    # Source, clock, queue and budget are all server-owned. Viewers do not tick.
+    for sid, session in (state or {}).get("sessions", {}).items():
+        if session["status"] != "running":
+            continue
+        try:
+            await pulse(store, sid, backend_factory=SessionFoundryBackend,
+                        preflight=lambda: cloud_trial_preflight(require_enabled=False))
+        except Exception as exc:
+            logging.warning("Session coordinator blocked: %s", type(exc).__name__)

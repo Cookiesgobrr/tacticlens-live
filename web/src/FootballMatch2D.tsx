@@ -8,6 +8,7 @@ import {FORMATIONS} from "./formations";
 import TeamFormations from "./TeamFormations";
 import LiveMomentPreview,{useLiveMomentPreview} from "./LiveMomentPreview";
 import NewUserTour from "./NewUserTour";
+import LiveSessionMoments from "./LiveSessionMoments";
 import MatchTimeline from "./MatchTimeline";
 import {aiAudience,visibleAICard} from "./momentIntelligence";
 const MatchPitch3D=lazy(()=>import("./MatchPitch3D"));
@@ -212,6 +213,7 @@ export default function FootballMatch2D(){
           <h2>Match intelligence</h2>
 
           <div className="new-lenses" aria-label="Audience perspective">{(["fan","analyst","club","player"] as Lens[]).map(view=><button key={view} aria-pressed={lens===view} onClick={()=>{setLens(view);setMode(view==="analyst"?"analyst":view==="player"?"player":"fan");setCamera(view==="analyst"?"tactical":view==="player"?"player":"broadcast");}}>{view==="club"?"Club supporter":view[0].toUpperCase()+view.slice(1)}</button>)}</div>
+          <LiveSessionMoments match={match} time={time} onReplay={replayEvent} onJoin={(clock,rate)=>{setTime(clock);setSpeed(rate);setReplayEnd(null);setInspected(null);setPlaying(clock<match.duration);}}/>
           <LiveMomentPreview enabled={liveEnabled} onChange={setLiveEnabled} state={live.state}/>
           {aiCard&&displayPack?<FoundryMoment card={aiCard} pack={displayPack} livePublication={liveCard?live.publication:undefined} audience={aiAudience(lens,followTeam)} match={match} time={time} onSeek={seekEvent} onReplay={replayEvent}/>:<><span className="deterministic-label">Deterministic commentary</span><h4>{story.headline}</h4><p>{story.text}</p><div className="new-evidence-links">{story.evidence.map(e=><button key={e.id} onClick={()=>seekEvent(e)}>{mtime(e.time)} · {e.type} <small>{e.id}</small></button>)}</div><p className="new-muted">{ai.state==='ready'?'Precomputed Foundry evidence appears for the selected player and replay time.':ai.state==='other-seed'?'Deterministic insights for this seed. The Foundry showcase uses seed 82.':ai.state==='loading'?'Loading the optional Foundry cache; deterministic insights remain available.':'Foundry cache unavailable or rejected; showing deterministic insights.'}</p></>}
           <p className="new-muted">{mtime(time)} recap · {totals.score[0]}–{totals.score[1]} · {totals.shots[0]+totals.shots[1]} shots · {(totals.xg[0]+totals.xg[1]).toFixed(2)} xG. Calculated from events at or before the replay time.</p>
