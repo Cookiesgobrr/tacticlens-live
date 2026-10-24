@@ -36,3 +36,18 @@ def test_live_routes_require_function_auth():
         bindings=route.build().get_bindings()
         trigger=next(b.get_dict_repr() for b in bindings if b.get_dict_repr()['type']=='httpTrigger')
         assert trigger['authLevel']==func.AuthLevel.FUNCTION
+
+
+def test_session_routes_require_operator_auth_and_reader_has_no_generation(monkeypatch):
+    import asyncio
+    monkeypatch.setenv('TACTICLENS_SESSION_AI_ENABLED','false')
+    monkeypatch.setenv('TACTICLENS_SESSION_PUBLIC_IDS','')
+    monkeypatch.setattr(function_app,'VerifiedBlobStore',lambda:pytest.fail('Disabled/unlisted routes must not initialize storage'))
+    for route in (function_app.session_start,function_app.session_stop):
+        trigger=next(b.get_dict_repr() for b in route.build().get_bindings() if b.get_dict_repr()['type']=='httpTrigger')
+        assert trigger['authLevel']==func.AuthLevel.FUNCTION
+    request=func.HttpRequest(method='POST',url='https://offline.invalid/api/session-start/mock',body=b'{}')
+    assert function_app.session_start.build().get_user_function()(request).status_code==403
+    read=func.HttpRequest(method='GET',url='https://offline.invalid/api/session-feed/mock',body=b'',route_params={'session_id':'unknown-session'})
+    assert function_app.session_feed.build().get_user_function()(read).status_code==404
+    asyncio.run(function_app.session_coordinator.build().get_user_function()(None))

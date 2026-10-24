@@ -312,3 +312,22 @@ footer>div:first-child{display:flex;align-items:center;gap:8px}footer span:not(.
 @media(prefers-reduced-motion:reduce){.tour-spotlight{transition:none}}
 
 .live-cache-preview{margin:14px 0;border-block:1px solid var(--line);padding:12px 0;font-size:12px}.live-cache-preview summary{cursor:pointer;color:#c5b8cf}.live-cache-preview label{display:flex;align-items:center;gap:8px;margin-top:14px}.live-cache-preview p{font-size:12px!important;margin:12px 0!important;color:var(--green)}.live-cache-preview small{display:block;font-size:11px;line-height:1.7;color:var(--muted)}
+
+/* Optional protected-session reader, within the existing broadcast system. */
+.live-session-preview {border-block:1px solid var(--line,#d8d0da);margin:16px 0;padding:12px 0;min-width:0}
+.live-session-preview>summary {font-weight:800;cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.live-session-preview>summary span,.live-session-provenance {font-size:11px;font-weight:600;color:#706277}
+.live-session-state {margin:12px 0;font-weight:700;font-size:13px;color:#431c55}
+.live-session-controls {display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:11px;margin:10px 0}
+.live-session-preview button {border:1px solid #d7cdda;background:#f7f4f8;color:#3c1b4d;border-radius:4px;padding:6px 9px;cursor:pointer;font:inherit;font-size:12px}
+.live-session-preview label {display:block;margin:12px 0;font-size:12px;font-weight:650}
+.live-session-preview select {display:block;width:100%;margin-top:6px;padding:8px;background:#fff;color:#351643;border:1px solid #d7cdda;border-radius:4px}
+.live-session-history {list-style:none;padding:0;max-height:650px;overflow:auto;overscroll-behavior:contain}
+.live-session-history>li {border-top:1px solid #e7dfe9;padding:14px 0}
+.live-session-history summary {cursor:pointer;font-size:12px;line-height:1.5}
+.live-session-history summary time {font-variant-numeric:tabular-nums;display:block;color:#74627a}
+.live-session-history strong {font-size:14px}
+.live-session-history p {font-size:13px;line-height:1.65}
+.live-session-history code,.live-session-history small {display:block;overflow-wrap:anywhere;font-size:10px}
+.live-session-history .live-source {display:block;margin:5px 0;text-align:left;max-width:100%}
+.live-session-provenance {display:block;margin-top:10px}
