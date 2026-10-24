@@ -186,6 +186,19 @@ def session_stop(req: func.HttpRequest) -> func.HttpResponse:
         return respond({"status": "unknown_session"}, 404)
 
 
+@app.route(route="session-resume/{session_id}", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
+def session_resume(req: func.HttpRequest) -> func.HttpResponse:
+    from api.live_sessions import resume_session, enabled
+    if not enabled():
+        return respond({"status": "disabled"}, 403)
+    if req.get_body() not in (b"", b"{}"):
+        return respond({"status": "invalid_input"}, 400)
+    try:
+        return respond(resume_session(VerifiedBlobStore(), req.route_params["session_id"]))
+    except (ValueError, KeyError):
+        return respond({"status": "not_approved"}, 409)
+
+
 @app.route(route="session-feed/{session_id}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def session_feed(req: func.HttpRequest) -> func.HttpResponse:
     # Empty by default. Explicit exposure is a separate operator decision.

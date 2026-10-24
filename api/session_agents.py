@@ -14,7 +14,9 @@ INSIGHT = """You are TacticLens Session Insight. Use only this fictional match e
 Select the most meaningful factual editorial angle and evidence. Return JSON only:
 {\"id\":\"exact candidate.id\",\"angle\":\"existing claim ID\",\"claimIds\":[\"existing IDs\"]}.
 Choose 4 to 9 unique claim IDs. Include event, score, team0, team1, your angle,
-and player whenever available. Consider chance, sequence, activity and totals.
+and player whenever available. Always include at least one of chance, sequence,
+activity or totals. Claim IDs are the KEYS of facts.claims (for example "event",
+"score", "chance"), never SIM source-event IDs. Copy facts.candidate.id exactly.
 Do not invent causation, tracking, territory, atmosphere or future information.
 claims maps allowed IDs to exact source event IDs. stats contains prefix counts;
 shot contains the pre-outcome synthetic probability and geometry. An angle is
@@ -42,6 +44,23 @@ Broadcast: at most two IDs, event then optional score. Original audited prose is
 do not add free text, claims, predictions or fabricated context."""
 
 
+def output_schema(stage, payload):
+    """Provider-enforced closed shape; independent semantic gates still apply."""
+    facts = payload["facts"]
+    identity = {"type": "string", "enum": [facts["candidate"]["id"]]}
+    claims = {"type": "string", "enum": list(facts["claims"])}
+    def obj(properties):
+        return dict(type="object", properties=properties, required=list(properties), additionalProperties=False)
+    if stage == "Insight":
+        return obj(dict(id=identity, angle=claims, claimIds=dict(type="array", items=claims)))
+    if stage == "Verification":
+        return obj(dict(approved=dict(type="boolean"), checkedId=identity,
+                        issues=dict(type="array", items=dict(type="string"))))
+    selected = {"type": "string", "enum": payload["verifiedProposal"]["claimIds"]}
+    return obj(dict(id=identity, modes=obj({mode: dict(type="array", items=selected)
+        for mode in ("fan", "analyst", "club_home", "club_away", "player", "broadcast")})))
+
+
 class SessionFoundryBackend(ElevenFoundryBackend):
     provider = "microsoft-foundry"
     def __init__(self, limits, before_call, *, credential=None, async_client=None):
@@ -59,9 +78,10 @@ class SessionFoundryBackend(ElevenFoundryBackend):
         if len(self.attempts) >= 3 or stage != ("Insight", "Verification", "Presentation")[len(self.attempts)]:
             raise RuntimeError("Three-call ceiling")
         message = "Return JSON only.\n" + json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+        schema = output_schema(stage, payload)
         # UTF-8 bytes conservatively bound token count; account for instructions
         # and generous message/protocol overhead, not just the user payload.
-        input_bound = len(message.encode()) + len(self.instructions[stage].encode()) + 1024
+        input_bound = len(message.encode()) + len(self.instructions[stage].encode()) + len(json.dumps(schema).encode()) + 1024
         if len(message.encode()) > self.limits["inputBytesPerCall"] or input_bound > self.limits["inputTokensPerCall"]:
             raise ValueError("Input/token budget exceeded before inference")
         self.before_call(stage)  # atomic durable attempt BEFORE submitting transport
@@ -69,7 +89,9 @@ class SessionFoundryBackend(ElevenFoundryBackend):
         start = time.monotonic()
         response = await self.agents[stage].run(message, options={
             "max_tokens": self.limits["outputTokensPerCall"], "temperature": 0,
-            "response_format": {"type": "json_object"}, "store": False})
+            "response_format": {"type": "json_schema", "json_schema": {
+                "name": f"TacticLensSession{stage}", "strict": True,
+                "schema": schema}}, "store": False})
         usage = response.usage_details or {}
         # Missing usage is rejected, never silently reported as zero.
         self.trace.append(dict(stage=stage, agent=f"TacticLensSession{stage}", responseId=response.response_id,

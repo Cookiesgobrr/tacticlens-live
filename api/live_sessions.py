@@ -144,6 +144,31 @@ def stop_session(store, sid):
     return transaction(store, stop)
 
 
+def resume_session(store, sid, *, now=None):
+    """Explicit operator continuation; never resets seen events or reservations."""
+    if not enabled():
+        return {"status": "disabled"}
+    now = time.time() if now is None else now
+    approval, source = approval_for(store, sid, now)
+    caps = global_limits()
+    def resume(state):
+        s = state["sessions"][sid]
+        if s["status"] not in ("stopped", "paused"):
+            raise ValueError("Only a stopped/paused session can continue")
+        if (s["sourceSha256"] != digest(source) or s["engineSha256"] != source["engineSha256"]
+                or s["speed"] != approval["limits"]["speed"]
+                or s["reservedCalls"] >= approval["limits"]["calls"]
+                or s["reservedMoments"] >= approval["limits"]["moments"]):
+            raise ValueError("Source changed or original allocation exhausted")
+        if any(r["sessionId"] == sid and r["state"] in ACTIVE for r in state["reservations"].values()):
+            raise ValueError("Unreconciled in-flight workflow")
+        if sum(x["status"] == "running" and now < x["expiresAt"] for x in state["sessions"].values()) >= caps["activeSessions"]:
+            raise ValueError("Active session limit")
+        s.update(status="running", startedAt=now-s["clock"]/s["speed"], expiresAt=approval["expiresAt"], serviceAvailable=True)
+        return dict(status="resumed", sessionId=sid)
+    return transaction(store, resume)
+
+
 def _reserve(store, sid, approval, source, now):
     caps, limits = global_limits(), approval["limits"]
     day = datetime.fromtimestamp(now, timezone.utc).date().isoformat()
@@ -308,7 +333,11 @@ async def pulse(store, sid, *, backend_factory, preflight, now=None):
         def fail(state):
             r = state["reservations"][key]
             r.update(state="fallback", errorType=type(exc).__name__, finishedAt=stage_clock(),
-                     trace=getattr(backend, "trace", []))
+                     trace=getattr(backend, "trace", []), errorMessage=str(exc)[:300],
+                     agentOutputs=getattr(backend, "responses", []))
+            s = state["sessions"][sid]
+            if s["status"] == "running":
+                s.update(status="paused", queue=[])
         transaction(store, fail)
         return {"status": "failed_locked"}
     finally:
