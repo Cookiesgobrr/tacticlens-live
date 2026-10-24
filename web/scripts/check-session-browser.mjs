@@ -54,7 +54,7 @@ try{
  await page.route('**/data/session-offline-session-82.json',async route=>route.fulfill({json:completedFeed}));
  await page.route('https://session.offline.test/**',async route=>route.abort('failed'));
  await page.reload();
- await status.filter({hasText:'Verified insight available'}).waitFor();
+ await status.filter({hasText:'verified AI insights available'}).waitFor();
  assert.equal(await page.locator('.live-session-history>li[data-state=verified]').count(),0,
    'Archive history is spoiler-free until seeking or opening completed history');
  await page.getByRole('button',{name:'View completed AI history'}).click();
