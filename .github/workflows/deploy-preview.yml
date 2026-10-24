@@ -29,6 +29,12 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
         working-directory: web
+      - name: Mirror independently verified completed AI session (GET-only)
+        env:
+          VITE_LIVE_SESSION_READ_ORIGIN: https://tacticlens-api-2927.azurewebsites.net
+          VITE_LIVE_SESSION_ID: live-20261024-82
+        run: node --experimental-strip-types scripts/publish-session-snapshot.mjs
+        working-directory: web
       - name: Build static preview
         env:
           VITE_STATIC_DEMO: "true"
