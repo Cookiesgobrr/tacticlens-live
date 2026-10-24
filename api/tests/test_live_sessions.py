@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from api.live_event_facts import validate_source, detect, facts_for, check_proposal, check_plan, digest
 from api.live_sessions import (PREFIX, LEDGER, start_session, pulse, public_session, stop_session,
-                               transaction, approval_for)
+                               transaction, approval_for, resume_session)
 
 ROOT = Path(__file__).resolve().parents[2]
 NOW = 1792800000.0
@@ -216,6 +216,30 @@ class SessionTests(unittest.TestCase):
         count=len(FakeBackend.calls);self.tick(120)
         self.assertEqual(count,len(FakeBackend.calls))
         self.assertEqual(self.feed()['status'],'stopped')
+    def test_pause_and_operator_resume_keep_all_original_reservations(self):
+        self.start();FakeBackend.fail_stage='Verification';self.tick(60)
+        state=self.store.data[LEDGER];saved=copy.deepcopy(state['sessions'][SID])
+        self.assertEqual(saved['status'],'paused')
+        self.assertEqual(self.tick(600)['status'],'paused')
+        self.assertEqual(len(FakeBackend.calls),2)
+        self.assertEqual(resume_session(self.store,SID,now=NOW+100)['status'],'resumed')
+        current=self.store.data[LEDGER]['sessions'][SID]
+        for key in ('reservedCalls','reservedMoments','reservedMicroUsd','seen','records','clock'):
+            self.assertEqual(current[key],saved[key])
+        self.assertEqual(current['startedAt'],NOW+99)
+        with self.assertRaises(ValueError):resume_session(self.store,SID,now=NOW+101)
+        self.assertNotIn('agentOutputs',json.dumps(self.feed()))
+        self.assertNotIn('errorMessage',json.dumps(self.feed()))
+        FakeBackend.fail_stage=None
+        self.assertEqual(self.tick(60)['status'],'idle')
+    def test_resume_rejects_inflight_or_exhausted_allocation(self):
+        self.start();self.tick(60);stop_session(self.store,SID)
+        session=self.store.data[LEDGER]['sessions'][SID]
+        session['reservedCalls']=45
+        with self.assertRaises(ValueError):resume_session(self.store,SID,now=NOW+100)
+        session['reservedCalls']=3
+        next(iter(self.store.data[LEDGER]['reservations'].values()))['state']='processing'
+        with self.assertRaises(ValueError):resume_session(self.store,SID,now=NOW+100)
     def test_unavailable_preflight_never_initializes_model(self):
         self.start()
         def fail():raise RuntimeError('Azure unavailable')
