@@ -31,17 +31,15 @@ Provide short issues when rejecting. Code independently rebuilds every fact;
 your approval does not override that gate. Do not write commentary."""
 
 PRESENTATION = """You are TacticLens Session Presentation. Compose six distinct editions
-from ONLY the verified selected claim IDs. Return JSON only:
-{\"id\":\"exact candidate.id\",\"modes\":{\"fan\":[\"IDs\"],\"analyst\":[\"IDs\"],
-\"club_home\":[\"IDs\"],\"club_away\":[\"IDs\"],\"player\":[\"IDs\"],\"broadcast\":[\"IDs\"]}}.
-Each list contains 1 to 5 unique chosen IDs. Fan: event first, score and player
-story. For goals use at least three IDs including event, player and measured
-chance/sequence/activity/totals context. Analyst: chance geometry, measured sequence,
-activity and totals; fan and analyst lists MUST differ. Home supporters must
-include team0, away supporters team1. Player MUST include player when available,
-otherwise score for a lifecycle summary. Fan and broadcast MUST include event.
-Broadcast: at most two IDs, event then optional score. Original audited prose is compiled by code;
-do not add free text, claims, predictions or fabricated context."""
+from ONLY the verified selected claim IDs. Return the exact schema's JSON object.
+Each edition has named lead, context and support slots (broadcast has two slots).
+Claim IDs are KEYS such as event, player, chance, totals, never SIM source IDs.
+Choose the most relevant measured context and human/team support for each audience.
+Fan: event first, measured context, then the player story. Analyst: measured detail
+first, then complementary evidence. Club editions lead with their own team's facts.
+Player leads with the actual actor. Broadcast is concise: event then score/context.
+Slots are compiled in that order, with duplicates removed. Code independently checks
+every selected claim and required attribution. Do not write unrestricted prose."""
 
 
 def output_schema(stage, payload):
@@ -56,9 +54,37 @@ def output_schema(stage, payload):
     if stage == "Verification":
         return obj(dict(approved=dict(type="boolean"), checkedId=identity,
                         issues=dict(type="array", items=dict(type="string"))))
-    selected = {"type": "string", "enum": payload["verifiedProposal"]["claimIds"]}
-    return obj(dict(id=identity, modes=obj({mode: dict(type="array", items=selected)
-        for mode in ("fan", "analyst", "club_home", "club_away", "player", "broadcast")})))
+    ids = payload["verifiedProposal"]["claimIds"]
+    selected = {"type": "string", "enum": ids}
+    measured = {"type": "string", "enum": [x for x in ids if x in ("chance", "sequence", "activity", "totals")]}
+    if not measured["enum"]:
+        raise ValueError("Selected analysis has no measured context")
+    fixed = lambda name: {"type": "string", "enum": [name]}
+    modes = {}
+    for mode in ("fan", "analyst", "club_home", "club_away", "player", "broadcast"):
+        lead = {"fan": fixed("event"), "analyst": measured, "club_home": fixed("team0"),
+                "club_away": fixed("team1"), "player": fixed("player" if "player" in ids else "score"),
+                "broadcast": fixed("event")}[mode]
+        fields = dict(lead=lead, context=measured if mode == "fan" else selected)
+        if mode != "broadcast":
+            fields["support"] = fixed("player") if mode == "fan" and facts["candidate"].get("kind") == "goal" else selected
+        modes[mode] = obj(fields)
+    return obj(dict(id=identity, modes=obj(modes)))
+
+
+def compile_editions(raw, proposal):
+    """Only reorder model-chosen permitted IDs; add no claims or factual text."""
+    modes = ("fan", "analyst", "club_home", "club_away", "player", "broadcast")
+    if not isinstance(raw, dict) or set(raw) != {"id", "modes"} or raw["id"] != proposal["id"] or set(raw["modes"]) != set(modes):
+        raise ValueError("Wrong structured edition identity")
+    result = {}
+    for mode in modes:
+        slots = raw["modes"][mode]
+        keys = ("lead", "context") if mode == "broadcast" else ("lead", "context", "support")
+        if not isinstance(slots, dict) or set(slots) != set(keys) or any(slots[k] not in proposal["claimIds"] for k in keys):
+            raise ValueError("Unverified structured edition")
+        result[mode] = list(dict.fromkeys(slots[k] for k in keys))
+    return dict(id=raw["id"], modes=result)
 
 
 class SessionFoundryBackend(ElevenFoundryBackend):
@@ -100,3 +126,7 @@ class SessionFoundryBackend(ElevenFoundryBackend):
         answer = decode_json_object(response.text)
         self.responses.append(dict(stage=stage, responseId=response.response_id, output=answer))
         return answer
+
+    async def present(self, facts, proposal):
+        raw = await self._ask("Presentation", {"facts": facts, "verifiedProposal": proposal})
+        return compile_editions(raw, proposal)
