@@ -1,6 +1,6 @@
-# Event-driven multi-moment sessions — disabled private preview
+# Event-driven multi-moment sessions — deployed bounded preview
 
-This adds a new session service alongside the untouched seed 82 showcase and October 23 winner publication. The owner authorized a bounded October 24 rollout. The backend and read-only website connection are deployed. The initial run consumed four real Insight calls; their outputs failed the independent gate, so generation was stopped. The next run published one fresh, source-linked three-agent defensive insight, then paused after rejecting a goal edition that omitted measured context. Further rollout validation is pending. Passing mocked tests does not establish continuous live Foundry generation.
+The session service is deployed alongside the untouched seed 82 showcase and October 23 winner publication. The authorized October 24 rollout produced **nine new verified moments using 34 genuine Foundry calls**. Five earlier outputs failed closed; two operator pauses allowed schema fixes, with all reservations retained and no failed-event retries. Eight consecutive workflows succeeded after the final fix. Generation and the timer are now disabled, while the public website reads the completed verified history. See the [rollout receipt](LIVE_AI_ROLLOUT_20261024.md) for real usage, latency, failure disclosure, browser evidence and remaining limits.
 
 ## Implementation
 
